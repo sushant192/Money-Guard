@@ -14,12 +14,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -141,25 +140,18 @@ private fun GetStartedUiComponents(
 
 @Composable
 private fun BrandIcon() {
-    Box(
+    Image(
+        painter = painterResource(R.drawable.ic_moneyguard_logo),
+        contentDescription = stringResource(R.string.app_name),
         modifier = Modifier
-            .size(72.dp)
+            .size(96.dp)
             .clip(RoundedCornerShape(22.dp))
-            .background(Color.White.copy(alpha = 0.18f))
             .border(
                 width = 1.dp,
                 color = Color.White.copy(alpha = 0.20f),
                 shape = RoundedCornerShape(22.dp)
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.CreditCard,
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(36.dp)
-        )
-    }
+            )
+    )
 }
 
 @Composable

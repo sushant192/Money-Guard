@@ -52,14 +52,17 @@ android {
 
 // Koin annotations: rely solely on explicit @Module @ComponentScan classes
 // (see com.example.moneyguard.di.AppModules), no auto-generated default module.
+// KOIN_CONFIG_CHECK is left disabled because some bindings (e.g. qualified
+// Navigator) live in the manual `appModule` DSL and won't be visible to the
+// annotation-only check.
 ksp {
     arg("KOIN_DEFAULT_MODULE", "false")
-    arg("KOIN_CONFIG_CHECK", "true")
 }
 
 dependencies {
     // Core / lifecycle
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

@@ -2,4 +2,18 @@
 <resources>
 
     <style name="Theme.MoneyGuard" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!--
+        Splash theme used as the launcher activity theme.
+        Uses the AndroidX SplashScreen API:
+        - On Android 12+ this is rendered natively by the system.
+        - On older versions, the back-compat library mimics the same look.
+        After the splash is dismissed by `installSplashScreen()`, the activity
+        switches to `postSplashScreenTheme`.
+    -->
+    <style name="Theme.MoneyGuard.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_blue</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.MoneyGuard</item>
+    </style>
 </resources>
