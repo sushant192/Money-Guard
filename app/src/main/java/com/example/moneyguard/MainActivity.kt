@@ -15,6 +15,8 @@ import com.example.moneyguard.core.navigation.NavigationAction
 import com.example.moneyguard.core.navigation.Navigator
 import com.example.moneyguard.features.auth.getstarted.ui.GetStartedScreen
 import com.example.moneyguard.features.auth.getstarted.ui.GetStartedViewModel
+import com.example.moneyguard.features.auth.signup.ui.SignUpScreen
+import com.example.moneyguard.features.auth.signup.ui.SignUpViewModel
 import com.example.moneyguard.ui.theme.MoneyGuardTheme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -57,6 +59,10 @@ private fun MoneyGuardApp() {
             GetStartedScreen(viewModel = koinViewModel<GetStartedViewModel>())
         }
 
-        // TODO: Login & SignUp screens to be added next.
+        composable<Destination.SignUp> {
+            SignUpScreen(viewModel = koinViewModel<SignUpViewModel>())
+        }
+
+        // TODO: Login screen to be added next.
     }
 }

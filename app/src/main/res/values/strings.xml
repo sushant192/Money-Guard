@@ -6,4 +6,25 @@
     <string name="get_started_cta">Get started</string>
     <string name="get_started_login_prefix">Already have an account?</string>
     <string name="get_started_login_action">Log in</string>
+
+    <!-- Sign Up screen -->
+    <string name="signup_header_eyebrow">Create account</string>
+    <string name="signup_header_title">Welcome aboard</string>
+    <string name="signup_full_name">Full name</string>
+    <string name="signup_email">Email</string>
+    <string name="signup_password">Password</string>
+    <string name="signup_confirm_password">Confirm password</string>
+    <string name="signup_cta">Create account</string>
+    <string name="signup_login_prefix">Already have an account?</string>
+    <string name="signup_login_action">Log in</string>
+    <string name="signup_password_helper">Use at least 8 characters with letters and numbers.</string>
+    <string name="signup_error_full_name_required">Please enter your name</string>
+    <string name="signup_error_email_required">Please enter your email</string>
+    <string name="signup_error_email_invalid">Enter a valid email address</string>
+    <string name="signup_error_password_required">Please enter a password</string>
+    <string name="signup_error_password_invalid">Use at least 8 characters with letters and numbers</string>
+    <string name="signup_error_confirm_required">Please confirm your password</string>
+    <string name="signup_error_confirm_mismatch">Passwords do not match</string>
+    <string name="password_show">Show password</string>
+    <string name="password_hide">Hide password</string>
 </resources>

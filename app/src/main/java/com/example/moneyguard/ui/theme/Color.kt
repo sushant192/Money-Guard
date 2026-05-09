@@ -28,3 +28,14 @@ val BrandGradient = Brush.linearGradient(
         1.00f to BrandBlueEnd
     )
 )
+
+// Form / surface tokens
+val FieldBackground = Color(0xFFEEF1FA)        // soft blue-grey for text field background
+val FieldLabelText  = Color(0xFF6B7280)        // muted label / helper text
+val MutedText       = Color(0xFF6B7280)        // body / secondary text on white
+
+/** Error — clean, vibrant red (Material red-700) used for borders, labels, and helper text. */
+val ErrorMain = Color(0xFFD32F2F)
+
+/** Error on dark backgrounds — readable accent (M3-style). */
+val ErrorOnDark = Color(0xFFFFB4AB)
