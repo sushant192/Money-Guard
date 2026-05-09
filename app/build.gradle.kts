@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 
@@ -40,12 +41,20 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+}
+
+// Koin annotations: rely solely on explicit @Module @ComponentScan classes
+// (see com.example.moneyguard.di.AppModules), no auto-generated default module.
+ksp {
+    arg("KOIN_DEFAULT_MODULE", "false")
+    arg("KOIN_CONFIG_CHECK", "true")
 }
 
 dependencies {
@@ -62,10 +71,14 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+
+    // Serialization (type-safe nav routes)
+    implementation(libs.kotlinx.serialization.json)
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -78,6 +91,8 @@ dependencies {
     // Koin DI
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
+    implementation(libs.koin.annotations)
+    ksp(libs.koin.ksp.compiler)
 
     // Unit tests
     testImplementation(libs.junit)
