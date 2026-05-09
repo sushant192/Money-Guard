@@ -1,5 +1,6 @@
 package com.example.moneyguard.ui.theme
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 val Purple80 = Color(0xFFD0BCFF)
@@ -9,3 +10,21 @@ val Pink80 = Color(0xFFEFB8C8)
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
+
+// Brand palette
+val BrandBlue = Color(0xFF2563EB)        // primary brand blue
+val BrandBlueDeep = Color(0xFF1E40AF)
+
+// Brand palette — match prototype exactly
+val BrandBlueStart = Color(0xFF1565C0)   // deep blue
+val BrandBlueMid   = Color(0xFF1976D2)   // mid blue
+val BrandBlueEnd   = Color(0xFF2196F3)   // light blue accent
+
+// Diagonal gradient brush (reuse wherever needed)
+val BrandGradient = Brush.linearGradient(
+    colorStops = arrayOf(
+        0.00f to BrandBlueDeep,
+        0.55f to BrandBlueMid,
+        1.00f to BrandBlueEnd
+    )
+)
