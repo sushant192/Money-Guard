@@ -1,3 +1,9 @@
 <resources>
-    <string name="app_name">Money Guard</string>
+    <string name="app_name">MoneyGuard</string>
+
+    <!-- Get Started screen -->
+    <string name="get_started_tagline">Track every rupee.\nStay in control.</string>
+    <string name="get_started_cta">Get started</string>
+    <string name="get_started_login_prefix">Already have an account?</string>
+    <string name="get_started_login_action">Log in</string>
 </resources>
