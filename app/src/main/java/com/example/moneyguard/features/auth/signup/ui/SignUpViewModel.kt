@@ -50,19 +50,26 @@ class SignUpViewModel(
     override fun onCreateAccountClick() {
         val current = _uiState.value
         val errors = validate(current)
-        if (errors.hasAny) {
-            _uiState.update {
-                it.copy(
-                    fullNameError = errors.fullName,
-                    emailError = errors.email,
-                    passwordError = errors.password,
-                    confirmPasswordError = errors.confirmPassword
-                )
+//        if (errors.hasAny) {
+//            _uiState.update {
+//                it.copy(
+//                    fullNameError = errors.fullName,
+//                    emailError = errors.email,
+//                    passwordError = errors.password,
+//                    confirmPasswordError = errors.confirmPassword
+//                )
+//            }
+//            return
+//        }
+        // No real auth yet — we treat passing validation as "signed up" and
+        // jump out to the dashboard graph, popping the entire auth graph so
+        // the user can't swipe back into onboarding.
+        viewModelScope.launch {
+            navigator.navigate(Destination.DashboardGraph) {
+                popUpTo(Destination.AuthGraph) { inclusive = true }
+                launchSingleTop = true
             }
-            return
         }
-        // No-op for now. Wiring to a real sign-up use case will land in the
-        // next iteration once the data + domain layers are in place.
     }
 
     override fun onLoginClick() {

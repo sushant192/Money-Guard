@@ -27,4 +27,53 @@
     <string name="signup_error_confirm_mismatch">Passwords do not match</string>
     <string name="password_show">Show password</string>
     <string name="password_hide">Hide password</string>
+
+    <!-- Login screen -->
+    <string name="login_header_eyebrow">Welcome back</string>
+    <string name="login_header_title">Log in to MoneyGuard</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_forgot_password">Forgot password?</string>
+    <string name="login_cta">Log in</string>
+    <string name="login_or">or</string>
+    <string name="login_google_cta">Continue with Google</string>
+    <string name="login_signup_prefix">No account?</string>
+    <string name="login_signup_action">Sign up</string>
+
+    <!-- Set Limit & Category onboarding -->
+    <string name="set_limit_title">Set your daily limit</string>
+    <string name="set_limit_subtitle">We\'ll alert you when you\'re close to exceeding your budget</string>
+    <string name="set_limit_card_label">Daily spend limit</string>
+    <string name="set_limit_min">₹500</string>
+    <string name="set_limit_max">₹10,000</string>
+
+    <string name="categories_title">Pick your categories</string>
+    <string name="categories_subtitle">Select the ones that apply to your lifestyle</string>
+    <string name="category_food">Food</string>
+    <string name="category_entertainment">Entertainment</string>
+    <string name="category_transfer">Transfer</string>
+    <string name="category_travel">Travel</string>
+    <string name="category_bills">Bills</string>
+    <string name="category_shopping">Shopping</string>
+
+    <string name="set_limit_continue">Continue</string>
+    <string name="set_limit_cta">All done — let\'s go!</string>
+    <string name="set_limit_back">Go back</string>
+
+    <!-- Dashboard / Home -->
+    <string name="tab_home">Home</string>
+    <string name="tab_history">History</string>
+    <string name="tab_stats">Stats</string>
+    <string name="tab_limits">Limits</string>
+    <string name="tab_placeholder">Coming soon</string>
+
+    <string name="home_spent_today_label">SPENT TODAY</string>
+    <string name="home_daily_limit_row">Daily limit %1$s</string>
+    <string name="home_remaining_label">Remaining</string>
+    <string name="home_transactions_label">Transactions</string>
+    <string name="home_saved_label">Saved</string>
+    <string name="home_today_expenses">Today\'s expenses</string>
+    <string name="home_see_all">See all</string>
+    <string name="home_profile_content_description">Profile</string>
+    <string name="home_fab_add_expense">Add expense</string>
 </resources>

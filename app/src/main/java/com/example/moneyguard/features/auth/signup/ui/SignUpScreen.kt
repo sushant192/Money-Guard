@@ -1,6 +1,5 @@
 package com.example.moneyguard.features.auth.signup.ui
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,15 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,9 +47,9 @@ import androidx.compose.ui.unit.sp
 import com.example.moneyguard.R
 import com.example.moneyguard.core.arch.BaseScreen
 import com.example.moneyguard.core.validation.Validators
+import com.example.moneyguard.ui.components.AppFilledTextField
+import com.example.moneyguard.ui.components.PasswordVisibilityToggle
 import com.example.moneyguard.ui.theme.BrandBlueMid
-import com.example.moneyguard.ui.theme.ErrorMain
-import com.example.moneyguard.ui.theme.FieldBackground
 import com.example.moneyguard.ui.theme.MoneyGuardTheme
 import com.example.moneyguard.ui.theme.MutedText
 
@@ -98,7 +90,7 @@ private fun SignUpUiComponents(
                 .padding(top = 24.dp)
                 .navigationBarsPadding()
         ) {
-            FilledTextField(
+            AppFilledTextField(
                 value = state.fullName,
                 onValueChange = event::onFullNameChange,
                 label = stringResource(R.string.signup_full_name),
@@ -114,7 +106,7 @@ private fun SignUpUiComponents(
 
             Spacer(Modifier.height(14.dp))
 
-            FilledTextField(
+            AppFilledTextField(
                 value = state.email,
                 onValueChange = event::onEmailChange,
                 label = stringResource(R.string.signup_email),
@@ -130,7 +122,7 @@ private fun SignUpUiComponents(
 
             Spacer(Modifier.height(14.dp))
 
-            FilledTextField(
+            AppFilledTextField(
                 value = state.password,
                 onValueChange = event::onPasswordChange,
                 label = stringResource(R.string.signup_password),
@@ -160,7 +152,7 @@ private fun SignUpUiComponents(
 
             Spacer(Modifier.height(14.dp))
 
-            FilledTextField(
+            AppFilledTextField(
                 value = state.confirmPassword,
                 onValueChange = event::onConfirmPasswordChange,
                 label = stringResource(R.string.signup_confirm_password),
@@ -233,22 +225,6 @@ private fun SignUpUiComponents(
 }
 
 @Composable
-private fun PasswordVisibilityToggle(
-    visible: Boolean,
-    onToggle: () -> Unit
-) {
-    IconButton(onClick = onToggle) {
-        Icon(
-            imageVector = if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-            contentDescription = stringResource(
-                if (visible) R.string.password_hide else R.string.password_show
-            ),
-            tint = MutedText
-        )
-    }
-}
-
-@Composable
 private fun SignUpHeader() {
     Box(
         modifier = Modifier
@@ -278,77 +254,6 @@ private fun SignUpHeader() {
             )
         }
     }
-}
-
-@Composable
-private fun FilledTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    @StringRes errorRes: Int? = null,
-    @StringRes helperRes: Int? = null,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
-    trailingIcon: (@Composable () -> Unit)? = null
-) {
-    val isError = errorRes != null
-    val supportingText: (@Composable () -> Unit)? = when {
-        errorRes != null -> {
-            { Text(stringResource(errorRes)) }
-        }
-        helperRes != null -> {
-            { Text(stringResource(helperRes)) }
-        }
-        else -> null
-    }
-
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        singleLine = true,
-        isError = isError,
-        supportingText = supportingText,
-        keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions,
-        visualTransformation = visualTransformation,
-        trailingIcon = trailingIcon,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            // Input text always black for clear readability.
-            focusedTextColor = Color.Black,
-            unfocusedTextColor = Color.Black,
-            errorTextColor = Color.Black,
-            disabledTextColor = Color.Black.copy(alpha = 0.4f),
-
-            // Filled-style background.
-            focusedContainerColor = FieldBackground,
-            unfocusedContainerColor = FieldBackground,
-            disabledContainerColor = FieldBackground,
-            errorContainerColor = FieldBackground,
-
-            // No visible border in normal state; vibrant red border on error.
-            focusedBorderColor = Color.Transparent,
-            unfocusedBorderColor = Color.Transparent,
-            disabledBorderColor = Color.Transparent,
-            errorBorderColor = ErrorMain,
-
-            // Label colors — muted normally, red on error.
-            focusedLabelColor = MutedText,
-            unfocusedLabelColor = MutedText,
-            errorLabelColor = ErrorMain,
-
-            // Supporting text — muted helper, red error.
-            focusedSupportingTextColor = MutedText,
-            unfocusedSupportingTextColor = MutedText,
-            errorSupportingTextColor = ErrorMain,
-
-            cursorColor = BrandBlueMid,
-            errorCursorColor = ErrorMain
-        )
-    )
 }
 
 @Composable
