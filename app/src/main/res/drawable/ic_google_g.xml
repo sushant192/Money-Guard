@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Stylised G inside a circle, drawn in the brand blue.
+    This is a generic mark suitable for a "Continue with Google" affordance
+    without using the Google logo trademark.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+
+    <!-- Outer circle (1.5dp ring) -->
+    <path
+        android:fillColor="#FF1976D2"
+        android:pathData="M12,2 C6.4771,2 2,6.4771 2,12 C2,17.5229 6.4771,22 12,22 C17.5229,22 22,17.5229 22,12 C22,6.4771 17.5229,2 12,2 Z M12,3.6 C16.6392,3.6 20.4,7.3608 20.4,12 C20.4,16.6392 16.6392,20.4 12,20.4 C7.3608,20.4 3.6,16.6392 3.6,12 C3.6,7.3608 7.3608,3.6 12,3.6 Z" />
+
+    <!-- "G" letter strokes -->
+    <!-- Outer arc of the G -->
+    <path
+        android:fillColor="#FF1976D2"
+        android:pathData="M12,6.5 C13.6,6.5 15.0,7.2 16.0,8.3 L14.8,9.5 C14.1,8.8 13.1,8.3 12,8.3 C10,8.3 8.3,9.95 8.3,12 C8.3,14.05 10,15.7 12,15.7 C13.7,15.7 15.0,14.7 15.4,13.3 L12,13.3 L12,11.7 L17.0,11.7 C17.05,11.95 17.1,12.25 17.1,12.5 C17.1,15.4 14.85,17.5 12,17.5 C9.0,17.5 6.5,15.0 6.5,12 C6.5,9 9.0,6.5 12,6.5 Z" />
+</vector>

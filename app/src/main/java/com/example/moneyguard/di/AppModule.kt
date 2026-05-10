@@ -20,8 +20,10 @@ val appModule = module {
     single<CoroutineDispatcher>(named("MainDispatcher")) { Dispatchers.Main.immediate }
     single<CoroutineDispatcher>(named("DefaultDispatcher")) { Dispatchers.Default }
 
-    // Navigation
+    // Navigation — start the app on the auth graph, which itself starts at
+    // GetStarted. Once we have a session-restore use case, this can return
+    // either AuthGraph or DashboardGraph based on whether the user is signed in.
     single<Navigator>(named("AppNavigator")) {
-        AppNavigator(startDestination = Destination.GetStarted)
+        AppNavigator(startDestination = Destination.AuthGraph)
     }
 }

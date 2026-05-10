@@ -39,3 +39,6 @@ val ErrorMain = Color(0xFFD32F2F)
 
 /** Error on dark backgrounds — readable accent (M3-style). */
 val ErrorOnDark = Color(0xFFFFB4AB)
+
+/** Home dashboard header — matches primary marketing / prototype blue. */
+val HomeHeaderBlue = Color(0xFF1E75D5)
