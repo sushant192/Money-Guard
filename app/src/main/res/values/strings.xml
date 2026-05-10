@@ -76,4 +76,31 @@
     <string name="home_see_all">See all</string>
     <string name="home_profile_content_description">Profile</string>
     <string name="home_fab_add_expense">Add expense</string>
+
+    <!-- History tab -->
+    <string name="history_title">History</string>
+    <string name="history_subtitle">All your transactions</string>
+
+    <!-- Stats tab -->
+    <string name="stats_this_month">This month</string>
+    <string name="stats_amount_spent">%1$s spent</string>
+    <string name="stats_out_of_budget">out of %1$s monthly budget</string>
+    <string name="stats_spending_by_category">Spending by category</string>
+    <string name="stats_daily_this_week">Daily this week</string>
+
+    <!-- Limits tab -->
+    <string name="limits_title">Limits</string>
+    <string name="limits_subtitle">Set and manage your budgets</string>
+    <string name="limits_alert_used">%1$d%% of daily limit used</string>
+    <string name="limits_remaining_today">%1$s remaining today</string>
+    <string name="limits_daily">Daily limit</string>
+    <string name="limits_weekly">Weekly limit</string>
+    <string name="limits_monthly">Monthly limit</string>
+    <string name="limits_spent">%1$s spent</string>
+    <string name="limits_left">%1$s left</string>
+    <string name="limits_alert_threshold">Alert threshold</string>
+    <string name="limits_threshold_70" formatted="false">70%</string>
+    <string name="limits_threshold_80" formatted="false">80%</string>
+    <string name="limits_threshold_90" formatted="false">90%</string>
+    <string name="limits_threshold_custom">Custom</string>
 </resources>

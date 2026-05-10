@@ -26,11 +26,17 @@ class HomeViewModel : BaseComposeViewModel<HomeUiState>(),
     }
 
     override fun onSeeAllExpensesClick() {
-        // Full expense history — wire when History / detail exists.
+        // "See all" on Home jumps to the History tab — same dashboard, just
+        // another tab, so we reuse the existing tab-selection path.
+        onTabSelected(DashboardTab.History)
     }
 
     override fun onFabClick() {
         // Manual expense entry — wire when feature exists.
+    }
+
+    override fun onAlertThresholdSelect(threshold: AlertThreshold) {
+        _uiState.update { it.copy(alertThreshold = threshold) }
     }
 
     companion object {

@@ -9,4 +9,6 @@ interface HomeUiEvents {
     fun onSeeAllExpensesClick()
 
     fun onFabClick()
+
+    fun onAlertThresholdSelect(threshold: AlertThreshold)
 }

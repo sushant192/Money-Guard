@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,12 +26,15 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowCircleRight
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -50,6 +55,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,29 +109,38 @@ private fun HomeUiComponents(
             }
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = Color.White,
-                tonalElevation = 0.dp,
-            ) {
-                DashboardTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = state.selectedTab == tab,
-                        onClick = { event.onTabSelected(tab) },
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon(),
-                                contentDescription = stringResource(tab.labelRes),
-                            )
-                        },
-                        label = { Text(text = stringResource(tab.labelRes)) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = BrandBlue,
-                            selectedTextColor = BrandBlue,
-                            indicatorColor = BrandBlue.copy(alpha = 0.12f),
-                            unselectedIconColor = MutedText,
-                            unselectedTextColor = MutedText,
-                        ),
-                    )
+            // Wrap the NavigationBar in a Column so we can paint a thin
+            // hairline divider above it — gives the tab bar a clear edge
+            // against the white content area, matching the design.
+            Column {
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = Color(0xFFE5E7EB),
+                )
+                NavigationBar(
+                    containerColor = Color.White,
+                    tonalElevation = 0.dp,
+                ) {
+                    DashboardTab.entries.forEach { tab ->
+                        NavigationBarItem(
+                            selected = state.selectedTab == tab,
+                            onClick = { event.onTabSelected(tab) },
+                            icon = {
+                                Icon(
+                                    imageVector = tab.icon(),
+                                    contentDescription = stringResource(tab.labelRes),
+                                )
+                            },
+                            label = { Text(text = stringResource(tab.labelRes)) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = BrandBlue,
+                                selectedTextColor = BrandBlue,
+                                indicatorColor = BrandBlue.copy(alpha = 0.12f),
+                                unselectedIconColor = MutedText,
+                                unselectedTextColor = MutedText,
+                            ),
+                        )
+                    }
                 }
             }
         },
@@ -137,27 +152,11 @@ private fun HomeUiComponents(
         ) {
             when (state.selectedTab) {
                 DashboardTab.Home -> HomeTabContent(state = state, event = event)
-                else -> PlaceholderTab(modifier = Modifier.fillMaxSize())
+                DashboardTab.History -> HistoryTabContent(state = state)
+                DashboardTab.Stats -> StatsTabContent(state = state)
+                DashboardTab.Limits -> LimitsTabContent(state = state, event = event)
             }
         }
-    }
-}
-
-@Composable
-private fun PlaceholderTab(modifier: Modifier = Modifier) {
-    // We disabled Scaffold's top inset, so each tab is responsible for keeping
-    // its own content out from under the status bar.
-    Box(
-        modifier = modifier
-            .background(Color.White)
-            .statusBarsPadding(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.tab_placeholder),
-            style = MaterialTheme.typography.titleMedium,
-            color = MutedText,
-        )
     }
 }
 
@@ -253,6 +252,597 @@ private fun HomeTabContent(
         }
     }
 }
+
+@Composable
+private fun HistoryTabContent(state: HomeUiState) {
+    val scroll = rememberScrollState()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scroll),
+        ) {
+            // Blue header — same shell as Home, just different copy.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(HomeHeaderBlue)
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 8.dp, bottom = 32.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.history_title),
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.history_subtitle),
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 14.sp,
+                )
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-20).dp),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                color = Color.White,
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
+                ) {
+                    state.historyGroups.forEachIndexed { index, group ->
+                        if (index > 0) Spacer(Modifier.height(20.dp))
+                        Text(
+                            text = group.title.uppercase(),
+                            color = MutedText,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 1.4.sp,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        group.items.forEach { item ->
+                            HistoryRow(item = item)
+                            Spacer(Modifier.height(12.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryRow(item: HistoryItemUi) {
+    val nf = rememberInrFormatter()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(FieldBackground)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ExpenseIconBadge(style = item.iconStyle)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp),
+        ) {
+            Text(
+                text = item.title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = Color(0xFF111827),
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = item.time,
+                fontSize = 13.sp,
+                color = MutedText,
+            )
+        }
+        Text(
+            text = "−${nf.formatInrPlain(item.amountRupees)}",
+            color = ErrorMain,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+        )
+    }
+}
+
+// region — Stats tab
+
+@Composable
+private fun StatsTabContent(state: HomeUiState) {
+    val scroll = rememberScrollState()
+    val nf = rememberInrFormatter()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scroll),
+        ) {
+            // Compact blue header — three stacked lines, no large card.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(HomeHeaderBlue)
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 8.dp, bottom = 32.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.stats_this_month),
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 14.sp,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        R.string.stats_amount_spent,
+                        nf.formatInrPlain(state.monthSpentRupees),
+                    ),
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.4).sp,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        R.string.stats_out_of_budget,
+                        nf.formatInrPlain(state.monthlyBudgetRupees),
+                    ),
+                    color = Color.White.copy(alpha = 0.78f),
+                    fontSize = 14.sp,
+                )
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-20).dp),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                color = Color.White,
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
+                ) {
+                    SpendingByCategorySection(
+                        categories = state.categoryBreakdown,
+                        formatter = nf,
+                    )
+
+                    Spacer(Modifier.height(28.dp))
+
+                    DailyThisWeekSection(bars = state.weekDailyBars)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpendingByCategorySection(
+    categories: List<CategorySpendUi>,
+    formatter: InrFormatter,
+) {
+    Text(
+        text = stringResource(R.string.stats_spending_by_category),
+        color = Color(0xFF111827),
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+    )
+    Spacer(Modifier.height(16.dp))
+    val maxAmount = categories.maxOfOrNull { it.amountRupees }?.coerceAtLeast(1) ?: 1
+    categories.forEachIndexed { index, item ->
+        if (index > 0) Spacer(Modifier.height(16.dp))
+        CategoryProgressRow(
+            name = stringResource(item.nameRes),
+            amountText = formatter.formatInrPlain(item.amountRupees),
+            fraction = item.amountRupees.toFloat() / maxAmount,
+            color = item.color,
+        )
+    }
+}
+
+@Composable
+private fun CategoryProgressRow(
+    name: String,
+    amountText: String,
+    fraction: Float,
+    color: Color,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = name,
+                color = Color(0xFF111827),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = amountText,
+                color = Color(0xFF111827),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { fraction.coerceIn(0f, 1f) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
+            color = color,
+            trackColor = FieldBackground,
+            strokeCap = StrokeCap.Round,
+            gapSize = 0.dp,
+            drawStopIndicator = {},
+        )
+    }
+}
+
+@Composable
+private fun DailyThisWeekSection(bars: List<DayBarUi>) {
+    Text(
+        text = stringResource(R.string.stats_daily_this_week),
+        color = Color(0xFF111827),
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+    )
+    Spacer(Modifier.height(18.dp))
+    WeekBarChart(bars = bars)
+}
+
+@Composable
+private fun WeekBarChart(bars: List<DayBarUi>) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            bars.forEach { bar ->
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom,
+                ) {
+                    val barColor = when (bar.kind) {
+                        BarKind.Today -> HomeHeaderBlue
+                        BarKind.Past -> HomeHeaderBlue.copy(alpha = 0.45f)
+                        BarKind.Future -> Color(0xFFE5E7EB)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.55f)
+                            // Smallest rendered bar is ~5% so even zero-spend
+                            // days show a visible stub like the prototype.
+                            .fillMaxHeight(bar.heightFraction.coerceIn(0.05f, 1f))
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(barColor),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(modifier = Modifier.fillMaxWidth()) {
+            bars.forEach { bar ->
+                Text(
+                    text = bar.label,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    fontSize = 12.sp,
+                    color = if (bar.kind == BarKind.Future) {
+                        MutedText.copy(alpha = 0.55f)
+                    } else {
+                        MutedText
+                    },
+                    fontWeight = if (bar.kind == BarKind.Today) FontWeight.SemiBold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+}
+
+// endregion
+
+// region — Limits tab
+
+@Composable
+private fun LimitsTabContent(
+    state: HomeUiState,
+    event: HomeUiEvents,
+) {
+    val scroll = rememberScrollState()
+    val nf = rememberInrFormatter()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scroll),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(HomeHeaderBlue)
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 8.dp, bottom = 32.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.limits_title),
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.limits_subtitle),
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 14.sp,
+                )
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-20).dp),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                color = Color.White,
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
+                ) {
+                    AlertBanner(
+                        percentUsed = state.budgetUsedPercent,
+                        remainingText = nf.formatInrPlain(state.remainingRupees),
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    LimitCard(
+                        title = stringResource(R.string.limits_daily),
+                        totalText = nf.formatInrPlain(state.dailyLimitRupees),
+                        spentText = stringResource(R.string.limits_spent, nf.formatInrPlain(state.spentTodayRupees)),
+                        leftText = stringResource(R.string.limits_left, nf.formatInrPlain(state.remainingRupees)),
+                        fraction = state.spentTodayRupees.toFloat() / state.dailyLimitRupees.coerceAtLeast(1),
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    val weeklyLeft = (state.weeklyLimitRupees - state.weeklySpentRupees).coerceAtLeast(0)
+                    LimitCard(
+                        title = stringResource(R.string.limits_weekly),
+                        totalText = nf.formatInrPlain(state.weeklyLimitRupees),
+                        spentText = stringResource(R.string.limits_spent, nf.formatInrPlain(state.weeklySpentRupees)),
+                        leftText = stringResource(R.string.limits_left, nf.formatInrPlain(weeklyLeft)),
+                        fraction = state.weeklySpentRupees.toFloat() / state.weeklyLimitRupees.coerceAtLeast(1),
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    val monthlyLeft = (state.monthlyBudgetRupees - state.monthSpentRupees).coerceAtLeast(0)
+                    LimitCard(
+                        title = stringResource(R.string.limits_monthly),
+                        totalText = nf.formatInrPlain(state.monthlyBudgetRupees),
+                        spentText = stringResource(R.string.limits_spent, nf.formatInrPlain(state.monthSpentRupees)),
+                        leftText = stringResource(R.string.limits_left, nf.formatInrPlain(monthlyLeft)),
+                        fraction = state.monthSpentRupees.toFloat() / state.monthlyBudgetRupees.coerceAtLeast(1),
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    AlertThresholdCard(
+                        selected = state.alertThreshold,
+                        onSelect = event::onAlertThresholdSelect,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlertBanner(percentUsed: Int, remainingText: String) {
+    // Soft peach card with star + warning text. Uses the same design tokens
+    // as other "informational" surfaces — hand-tuned hex values rather than
+    // Material defaults so the banner reads as a brand alert, not an error.
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFFFE9D5))
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Star,
+            contentDescription = null,
+            tint = Color(0xFFF59E0B),
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.limits_alert_used, percentUsed),
+                color = Color(0xFFB45309),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = stringResource(R.string.limits_remaining_today, remainingText),
+                color = Color(0xFF8A5F1A),
+                fontSize = 13.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LimitCard(
+    title: String,
+    totalText: String,
+    spentText: String,
+    leftText: String,
+    fraction: Float,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(FieldBackground)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                color = Color(0xFF111827),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = totalText,
+                color = BrandBlue,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        LinearProgressIndicator(
+            progress = { fraction.coerceIn(0f, 1f) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
+            color = BrandBlue,
+            trackColor = Color.White,
+            strokeCap = StrokeCap.Round,
+            gapSize = 0.dp,
+            drawStopIndicator = {},
+        )
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = spentText,
+                color = MutedText,
+                fontSize = 13.sp,
+            )
+            Text(
+                text = leftText,
+                color = MutedText,
+                fontSize = 13.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlertThresholdCard(
+    selected: AlertThreshold,
+    onSelect: (AlertThreshold) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(FieldBackground)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.limits_alert_threshold),
+            color = Color(0xFF111827),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AlertThreshold.entries.forEach { threshold ->
+                ThresholdChip(
+                    label = stringResource(threshold.labelRes),
+                    isSelected = threshold == selected,
+                    onClick = { onSelect(threshold) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThresholdChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .height(44.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isSelected) BrandBlue else Color.White)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            color = if (isSelected) Color.White else BrandBlue,
+            fontSize = 14.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+        )
+    }
+}
+
+// endregion
 
 @Composable
 private fun HomeHeaderRow(
@@ -479,6 +1069,11 @@ private fun ExpenseIconBadge(style: ExpenseIconStyle) {
             tint = Color(0xFFE67E22)
             icon = Icons.Outlined.Restaurant
         }
+        ExpenseIconStyle.Travel -> {
+            bg = Color(0xFFEAE2FB) // very soft lavender
+            tint = Color(0xFF8E24AA)
+            icon = Icons.Outlined.LocationOn
+        }
     }
     Box(
         modifier = Modifier
@@ -528,6 +1123,7 @@ private fun HomePreview() {
                 override fun onProfileClick() = Unit
                 override fun onSeeAllExpensesClick() = Unit
                 override fun onFabClick() = Unit
+                override fun onAlertThresholdSelect(threshold: AlertThreshold) = Unit
             },
         )
     }
