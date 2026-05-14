@@ -1,8 +1,11 @@
 package com.example.moneyguard.features.dashboard.home.ui
+
+import android.content.Context
 import androidx.lifecycle.viewModelScope
 import com.example.moneyguard.core.arch.BaseComposeViewModel
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
+import com.example.moneyguard.core.notifications.NotificationAccessManager
 import com.example.moneyguard.features.auth.domain.repository.AuthRepository
 import com.example.moneyguard.features.auth.domain.usecase.LogoutUseCase
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.ClearBudgetSetupUseCase
@@ -18,6 +21,7 @@ import java.util.Calendar
 @KoinViewModel
 class HomeViewModel(
     @Named("AppNavigator") private val navigator: Navigator,
+    private val notificationAccessManager: NotificationAccessManager,
     private val authRepository: AuthRepository,
     private val logoutUseCase: LogoutUseCase,
     private val clearBudgetSetup: ClearBudgetSetupUseCase,
@@ -29,9 +33,16 @@ class HomeViewModel(
             greetingPrefix = greetingPrefixForHour(Calendar.getInstance()),
             userName = currentUserDisplayName(),
             userEmail = authRepository.currentUser?.email.orEmpty(),
+            hasNotificationAccess = notificationAccessManager.hasNotificationAccess(),
         )
     )
     override val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    override fun onActive() {
+        _uiState.update {
+            it.copy(hasNotificationAccess = notificationAccessManager.hasNotificationAccess())
+        }
+    }
 
     override fun onTabSelected(tab: DashboardTab) {
         _uiState.update { it.copy(selectedTab = tab) }
@@ -49,6 +60,10 @@ class HomeViewModel(
 
     override fun onAlertThresholdSelect(threshold: AlertThreshold) {
         _uiState.update { it.copy(alertThreshold = threshold) }
+    }
+
+    override fun onGrantNotificationAccessClick(activityContext: Context) {
+        notificationAccessManager.openNotificationAccessSettings(activityContext)
     }
 
     override fun onLogoutClick() {

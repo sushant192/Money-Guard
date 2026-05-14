@@ -84,6 +84,11 @@
     <string name="home_see_all">See all</string>
     <string name="home_profile_content_description">Profile</string>
     <string name="home_fab_add_expense">Add expense</string>
+    <string name="home_awaiting_access">Awaiting access</string>
+    <string name="home_permission_needed_title">Notification access needed</string>
+    <string name="home_permission_needed_body">MoneyGuard reads your payment notifications to track expenses automatically. Grant access to get started.</string>
+    <string name="home_permission_needed_cta">Grant notification access</string>
+    <string name="home_permission_needed_note">Your notifications are never stored or shared.</string>
     <string name="notification_listener_service_label">MoneyGuard notification listener</string>
 
     <!-- Auth: button loading labels -->

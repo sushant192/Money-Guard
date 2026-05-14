@@ -1,6 +1,7 @@
 package com.example.moneyguard.features.dashboard.home.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,14 +30,18 @@ import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowCircleRight
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.PriorityHigh
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -63,15 +68,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import com.example.moneyguard.R
 import com.example.moneyguard.core.arch.BaseScreen
 import com.example.moneyguard.ui.theme.BrandBlue
@@ -80,6 +85,7 @@ import com.example.moneyguard.ui.theme.FieldBackground
 import com.example.moneyguard.ui.theme.HomeHeaderBlue
 import com.example.moneyguard.ui.theme.MoneyGuardTheme
 import com.example.moneyguard.ui.theme.MutedText
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -260,7 +266,18 @@ private fun HomeTabContent(
     event: HomeUiEvents,
     onMenuClick: () -> Unit,
 ) {
+    val context = LocalContext.current
     val scroll = rememberScrollState()
+
+    if (!state.hasNotificationAccess) {
+        PermissionPendingHomeContent(
+            state = state,
+            onMenuClick = onMenuClick,
+            onGrantClick = { event.onGrantNotificationAccessClick(context) },
+        )
+        return
+    }
+
     // Outer Box with a white background so any "empty" area below the
     // expenses (when content is shorter than the screen, or when scrolled
     // up) reads as white instead of the blue header colour bleeding through.
@@ -344,6 +361,277 @@ private fun HomeTabContent(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PermissionPendingHomeContent(
+    state: HomeUiState,
+    onMenuClick: () -> Unit,
+    onGrantClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(HomeHeaderBlue)
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 8.dp, bottom = 32.dp),
+            ) {
+                HomeHeaderRow(
+                    greetingPrefix = state.greetingPrefix,
+                    userName = state.userName,
+                    onMenuClick = onMenuClick,
+                )
+                Spacer(Modifier.height(20.dp))
+                AwaitingAccessCard(dailyLimitRupees = state.dailyLimitRupees)
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-20).dp),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                color = Color.White,
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_today_expenses),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF111827),
+                        modifier = Modifier.align(Alignment.Start),
+                    )
+                    Spacer(Modifier.height(36.dp))
+                    NotificationAccessIllustration()
+                    Spacer(Modifier.height(28.dp))
+                    Text(
+                        text = stringResource(R.string.home_permission_needed_title),
+                        color = Color(0xFF111827),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.home_permission_needed_body),
+                        color = MutedText,
+                        fontSize = 14.sp,
+                        lineHeight = 22.sp,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(26.dp))
+                    Button(
+                        onClick = onGrantClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(58.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BrandBlue,
+                            contentColor = Color.White,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(0.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.home_permission_needed_cta),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                        )
+                    }
+                    Spacer(Modifier.height(18.dp))
+                    Text(
+                        text = stringResource(R.string.home_permission_needed_note),
+                        color = MutedText.copy(alpha = 0.75f),
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AwaitingAccessCard(
+    dailyLimitRupees: Int,
+) {
+    val nf = rememberInrFormatter()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White.copy(alpha = 0.16f))
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.14f),
+                shape = RoundedCornerShape(20.dp),
+            )
+            .padding(horizontal = 18.dp, vertical = 18.dp),
+    ) {
+        val faded = Color.White.copy(alpha = 0.52f)
+        Text(
+            text = stringResource(R.string.home_spent_today_label),
+            color = faded,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.2.sp,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = stringResource(R.string.home_awaiting_access),
+            color = Color.White.copy(alpha = 0.70f),
+            fontSize = 34.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.4).sp,
+        )
+        Spacer(Modifier.height(14.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.home_daily_limit_row,
+                    nf.formatInrPlain(dailyLimitRupees),
+                ),
+                color = faded,
+                fontSize = 13.sp,
+            )
+            Text(
+                text = "—",
+                color = faded,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        LinearProgressIndicator(
+            progress = { 0f },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
+            color = Color.White.copy(alpha = 0.30f),
+            trackColor = Color.White.copy(alpha = 0.14f),
+            strokeCap = StrokeCap.Round,
+            gapSize = 0.dp,
+            drawStopIndicator = {},
+        )
+        Spacer(Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            StatPill(
+                label = stringResource(R.string.home_remaining_label),
+                value = "—",
+                modifier = Modifier.weight(1f),
+            )
+            StatPill(
+                label = stringResource(R.string.home_transactions_label),
+                value = "—",
+                modifier = Modifier.weight(1f),
+            )
+            StatPill(
+                label = stringResource(R.string.home_saved_label),
+                value = "—",
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun NotificationAccessIllustration() {
+    Box(
+        modifier = Modifier.size(width = 130.dp, height = 92.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(96.dp)
+                .height(72.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(Color(0xFFFFFBF2))
+                .border(
+                    width = 1.5.dp,
+                    color = Color(0xFFF5DCA6),
+                    shape = RoundedCornerShape(18.dp),
+                ),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                repeat(3) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(if (it == 1) 0.72f else 0.58f)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFFFE8C7)),
+                    )
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(x = (-12).dp, y = (-6).dp)
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFFFF6D9))
+                .border(1.5.dp, Color(0xFFF6D36B), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Check,
+                contentDescription = null,
+                tint = Color(0xFFE0A900),
+                modifier = Modifier.size(22.dp),
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = (-8).dp, y = (2).dp)
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFFDB022)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.PriorityHigh,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }
@@ -1398,6 +1686,7 @@ private fun HomePreview() {
                 override fun onSeeAllExpensesClick() = Unit
                 override fun onFabClick() = Unit
                 override fun onAlertThresholdSelect(threshold: AlertThreshold) = Unit
+                override fun onGrantNotificationAccessClick(activityContext: android.content.Context) = Unit
                 override fun onLogoutClick() = Unit
             },
         )
