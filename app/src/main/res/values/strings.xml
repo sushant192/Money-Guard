@@ -89,6 +89,9 @@
     <string name="home_permission_needed_body">MoneyGuard reads your payment notifications to track expenses automatically. Grant access to get started.</string>
     <string name="home_permission_needed_cta">Grant notification access</string>
     <string name="home_permission_needed_note">Your notifications are never stored or shared.</string>
+    <string name="home_empty_title">No expenses yet today</string>
+    <string name="home_empty_body">Your expenses will appear here automatically as soon as a payment notification comes in.</string>
+    <string name="home_empty_tip">Make a UPI payment and it\'ll show up here instantly — no manual entry needed.</string>
     <string name="notification_listener_service_label">MoneyGuard notification listener</string>
 
     <!-- Auth: button loading labels -->

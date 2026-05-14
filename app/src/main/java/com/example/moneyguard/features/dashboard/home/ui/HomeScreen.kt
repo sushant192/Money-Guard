@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.ArrowCircleRight
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
@@ -278,6 +279,14 @@ private fun HomeTabContent(
         return
     }
 
+    if (state.todayExpenses.isEmpty()) {
+        EmptyHomeContent(
+            state = state,
+            onMenuClick = onMenuClick,
+        )
+        return
+    }
+
     // Outer Box with a white background so any "empty" area below the
     // expenses (when content is shorter than the screen, or when scrolled
     // up) reads as white instead of the blue header colour bleeding through.
@@ -358,6 +367,121 @@ private fun HomeTabContent(
                     state.todayExpenses.forEach { expense ->
                         ExpenseRow(item = expense)
                         Spacer(Modifier.height(12.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyHomeContent(
+    state: HomeUiState,
+    onMenuClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(HomeHeaderBlue)
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 8.dp, bottom = 32.dp),
+            ) {
+                HomeHeaderRow(
+                    greetingPrefix = state.greetingPrefix,
+                    userName = state.userName,
+                    onMenuClick = onMenuClick,
+                )
+                Spacer(Modifier.height(20.dp))
+                SpentTodayCard(
+                    spentRupees = state.spentTodayRupees,
+                    dailyLimitRupees = state.dailyLimitRupees,
+                    budgetPercent = state.budgetUsedPercent,
+                    remainingRupees = state.remainingRupees,
+                    transactionCount = state.transactionCount,
+                    savedRupees = state.savedRupees,
+                )
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (-20).dp),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                color = Color.White,
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_today_expenses),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF111827),
+                        modifier = Modifier.align(Alignment.Start),
+                    )
+                    Spacer(Modifier.height(36.dp))
+                    NoExpensesIllustration()
+                    Spacer(Modifier.height(28.dp))
+                    Text(
+                        text = stringResource(R.string.home_empty_title),
+                        color = Color(0xFF111827),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.home_empty_body),
+                        color = MutedText,
+                        fontSize = 14.sp,
+                        lineHeight = 22.sp,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        color = Color(0xFFEFF5FF),
+                        tonalElevation = 0.dp,
+                        shadowElevation = 0.dp,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Info,
+                                contentDescription = null,
+                                tint = BrandBlue,
+                                modifier = Modifier.size(22.dp),
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.home_empty_tip),
+                                color = BrandBlue,
+                                fontSize = 14.sp,
+                                lineHeight = 22.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
                     }
                 }
             }
@@ -631,6 +755,79 @@ private fun NotificationAccessIllustration() {
                 contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier.size(22.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun NoExpensesIllustration() {
+    Box(
+        modifier = Modifier.size(width = 130.dp, height = 92.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(92.dp)
+                .height(72.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(Color(0xFFF8FAFF))
+                .border(
+                    width = 1.5.dp,
+                    color = Color(0xFFD6E1FF),
+                    shape = RoundedCornerShape(18.dp),
+                ),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                repeat(3) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(if (it == 1) 0.70f else 0.56f)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFE2E9FB)),
+                    )
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = 10.dp, y = 4.dp)
+                .size(22.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+                .border(1.dp, Color(0xFFD6E1FF), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Check,
+                contentDescription = null,
+                tint = Color(0xFF77A7FF),
+                modifier = Modifier.size(14.dp),
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = (-2).dp, y = (-6).dp)
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(BrandBlue),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Add,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp),
             )
         }
     }
