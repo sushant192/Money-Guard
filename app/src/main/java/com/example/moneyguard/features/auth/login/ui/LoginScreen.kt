@@ -209,7 +209,7 @@ private fun LoginUiComponents(
                     focusManager.clearFocus()
                     event.onLoginClick()
                 },
-                enabled = !state.isLoading,
+                enabled = !state.isEmailLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -224,7 +224,7 @@ private fun LoginUiComponents(
                 ),
                 elevation = ButtonDefaults.buttonElevation(0.dp)
             ) {
-                if (state.isLoading) {
+                if (state.isEmailLoading) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -256,7 +256,7 @@ private fun LoginUiComponents(
             Spacer(Modifier.height(20.dp))
 
             GoogleButton(
-                enabled = !state.isLoading,
+                enabled = !state.isGoogleLoading,
                 onClick = { event.onContinueWithGoogleClick(context) },
             )
 
@@ -391,7 +391,8 @@ private fun LoginPreview() {
                 password = "secret123",
                 emailError = null,
                 passwordError = null,
-                isLoading = false
+                isEmailLoading = false,
+                isGoogleLoading = false,
             ),
             event = object : LoginUiEvents {
                 override fun onEmailChange(value: String) = Unit
@@ -415,7 +416,8 @@ private fun LoginErrorPreview() {
                 password = "",
                 emailError = R.string.signup_error_email_invalid,
                 passwordError = R.string.signup_error_password_required,
-                isLoading = false
+                isEmailLoading = false,
+                isGoogleLoading = false,
             ),
             event = object : LoginUiEvents {
                 override fun onEmailChange(value: String) = Unit

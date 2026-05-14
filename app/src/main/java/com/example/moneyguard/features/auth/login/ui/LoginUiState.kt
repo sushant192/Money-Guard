@@ -10,7 +10,8 @@ data class LoginUiState(
     val password: String,
     @StringRes val emailError: Int?,
     @StringRes val passwordError: Int?,
-    val isLoading: Boolean
+    val isEmailLoading: Boolean,
+    val isGoogleLoading: Boolean,
 ) : UiState {
     companion object {
         val Initial = LoginUiState(
@@ -18,7 +19,8 @@ data class LoginUiState(
             password = "",
             emailError = null,
             passwordError = null,
-            isLoading = false
+            isEmailLoading = false,
+            isGoogleLoading = false,
         )
     }
 }

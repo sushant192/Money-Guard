@@ -54,7 +54,7 @@ class LoginViewModel(
 
     override fun onLoginClick() {
         val current = _uiState.value
-        if (current.isLoading) return
+        if (current.isEmailLoading || current.isGoogleLoading) return
 
         val emailError = when {
             !Validators.isNotBlank(current.email) -> R.string.signup_error_email_required
@@ -73,7 +73,7 @@ class LoginViewModel(
             return
         }
 
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update { it.copy(isEmailLoading = true) }
         viewModelScope.launch {
             loginWithEmail(current.email, current.password)
                 .onSuccess { navigateToDashboard() }
@@ -86,8 +86,8 @@ class LoginViewModel(
     }
 
     override fun onContinueWithGoogleClick(activityContext: Context) {
-        if (_uiState.value.isLoading) return
-        _uiState.update { it.copy(isLoading = true) }
+        if (_uiState.value.isEmailLoading || _uiState.value.isGoogleLoading) return
+        _uiState.update { it.copy(isGoogleLoading = true) }
 
         viewModelScope.launch {
             googleSignInHelper.fetchIdToken(activityContext)
@@ -120,7 +120,7 @@ class LoginViewModel(
 
     private fun handleAuthFailure(throwable: Throwable) {
         val authError = (throwable as? AuthException)?.error
-        _uiState.update { it.copy(isLoading = false) }
+        _uiState.update { it.copy(isEmailLoading = false, isGoogleLoading = false) }
         // Silently swallow user-driven cancellations of the Google sheet —
         // the user knows what they did, we don't need to show anything.
         if (authError == AuthError.GoogleCancelled) return
