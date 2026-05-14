@@ -44,6 +44,9 @@ class MoneyGuardPreferenceDataStore(
     suspend fun hasCompletedBudgetSetup(): Boolean =
         context.preferences.data.first()[PREFS_KEY_HAS_COMPLETED_BUDGET_SETUP] ?: false
 
+    suspend fun getDailyLimit(): Int? =
+        context.preferences.data.first()[PREFS_KEY_DAILY_LIMIT]
+
     suspend fun clearBudgetSetup() {
         context.preferences.edit { prefs ->
             prefs.remove(PREFS_KEY_DAILY_LIMIT)

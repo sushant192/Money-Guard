@@ -9,6 +9,7 @@ import com.example.moneyguard.core.notifications.NotificationAccessManager
 import com.example.moneyguard.features.auth.domain.repository.AuthRepository
 import com.example.moneyguard.features.auth.domain.usecase.LogoutUseCase
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.ClearBudgetSetupUseCase
+import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.GetDailyLimitUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +26,7 @@ class HomeViewModel(
     private val authRepository: AuthRepository,
     private val logoutUseCase: LogoutUseCase,
     private val clearBudgetSetup: ClearBudgetSetupUseCase,
+    private val getDailyLimit: GetDailyLimitUseCase,
 ) : BaseComposeViewModel<HomeUiState>(),
     HomeUiEvents {
 
@@ -38,10 +40,15 @@ class HomeViewModel(
     )
     override val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    init {
+        refreshSavedDailyLimit()
+    }
+
     override fun onActive() {
         _uiState.update {
             it.copy(hasNotificationAccess = notificationAccessManager.hasNotificationAccess())
         }
+        refreshSavedDailyLimit()
     }
 
     override fun onTabSelected(tab: DashboardTab) {
@@ -100,5 +107,24 @@ class HomeViewModel(
                 ?.substringBefore("@")
                 ?.takeIf { it.isNotBlank() }
             ?: HomeUiState.Initial.userName
+    }
+
+    private fun refreshSavedDailyLimit() {
+        viewModelScope.launch {
+            val savedLimit = getDailyLimit() ?: return@launch
+            _uiState.update { state ->
+                val remaining = (savedLimit - state.spentTodayRupees).coerceAtLeast(0)
+                val usedPercent = if (savedLimit > 0) {
+                    ((state.spentTodayRupees * 100f) / savedLimit).toInt()
+                } else {
+                    0
+                }
+                state.copy(
+                    dailyLimitRupees = savedLimit,
+                    remainingRupees = remaining,
+                    budgetUsedPercent = usedPercent,
+                )
+            }
+        }
     }
 }

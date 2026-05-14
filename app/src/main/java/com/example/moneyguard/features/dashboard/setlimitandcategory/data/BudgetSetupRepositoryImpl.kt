@@ -20,6 +20,9 @@ class BudgetSetupRepositoryImpl(
     override suspend fun hasCompletedBudgetSetup(): Boolean =
         preferenceDataStore.hasCompletedBudgetSetup()
 
+    override suspend fun getDailyLimit(): Int? =
+        preferenceDataStore.getDailyLimit()
+
     override suspend fun clearBudgetSetup() {
         preferenceDataStore.clearBudgetSetup()
     }

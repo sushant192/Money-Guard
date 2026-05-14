@@ -8,5 +8,7 @@ interface BudgetSetupRepository {
 
     suspend fun hasCompletedBudgetSetup(): Boolean
 
+    suspend fun getDailyLimit(): Int?
+
     suspend fun clearBudgetSetup()
 }
