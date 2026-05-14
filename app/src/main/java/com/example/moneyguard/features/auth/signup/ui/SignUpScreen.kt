@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,7 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -19,17 +22,23 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -46,20 +55,55 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.moneyguard.R
 import com.example.moneyguard.core.arch.BaseScreen
+import com.example.moneyguard.core.arch.ObserveAsEvents
 import com.example.moneyguard.core.validation.Validators
 import com.example.moneyguard.ui.components.AppFilledTextField
+import com.example.moneyguard.ui.components.AuthErrorToast
+import com.example.moneyguard.ui.components.AuthErrorVisuals
 import com.example.moneyguard.ui.components.PasswordVisibilityToggle
 import com.example.moneyguard.ui.theme.BrandBlueMid
 import com.example.moneyguard.ui.theme.MoneyGuardTheme
 import com.example.moneyguard.ui.theme.MutedText
+import kotlinx.coroutines.launch
 
 @Composable
 fun SignUpScreen(viewModel: SignUpViewModel) {
-    BaseScreen(viewModel) { state ->
-        SignUpUiComponents(
-            state = state.value,
-            event = viewModel
-        )
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    ObserveAsEvents(flow = viewModel.errorEvents) { msg ->
+        scope.launch {
+            snackbarHostState.showSnackbar(
+                AuthErrorVisuals(titleRes = msg.titleRes, messageRes = msg.messageRes),
+            )
+        }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            // Lift the snackbar above the system nav bar / keyboard since the
+            // screen disables Scaffold's window insets.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(bottom = 12.dp),
+            ) {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    AuthErrorToast(data = data)
+                }
+            }
+        },
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0),
+        containerColor = Color.Transparent,
+    ) { _ ->
+        BaseScreen(viewModel) { state ->
+            SignUpUiComponents(
+                state = state.value,
+                event = viewModel
+            )
+        }
     }
 }
 
@@ -196,15 +240,35 @@ private fun SignUpUiComponents(
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = BrandBlueMid,
-                    contentColor = Color.White
+                    contentColor = Color.White,
+                    disabledContainerColor = BrandBlueMid.copy(alpha = 0.65f),
+                    disabledContentColor = Color.White,
                 ),
                 elevation = ButtonDefaults.buttonElevation(0.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.signup_cta),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                if (state.isLoading) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.signup_creating_account),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.signup_cta),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))

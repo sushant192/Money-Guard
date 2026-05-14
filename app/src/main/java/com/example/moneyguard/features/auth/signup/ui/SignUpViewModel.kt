@@ -6,9 +6,17 @@ import com.example.moneyguard.core.arch.BaseComposeViewModel
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
 import com.example.moneyguard.core.validation.Validators
+import com.example.moneyguard.features.auth.domain.model.AuthErrorMessage
+import com.example.moneyguard.features.auth.domain.model.AuthException
+import com.example.moneyguard.features.auth.domain.model.toMessage
+import com.example.moneyguard.features.auth.domain.model.unknownAuthErrorMessage
+import com.example.moneyguard.features.auth.domain.usecase.SignUpWithEmailUseCase
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
@@ -16,12 +24,20 @@ import org.koin.core.annotation.Named
 
 @KoinViewModel
 class SignUpViewModel(
-    @Named("AppNavigator") private val navigator: Navigator
+    @Named("AppNavigator") private val navigator: Navigator,
+    private val signUpWithEmail: SignUpWithEmailUseCase,
 ) : BaseComposeViewModel<SignUpUiState>(),
     SignUpUiEvents {
 
     private val _uiState = MutableStateFlow(SignUpUiState.Initial)
     override val uiState: StateFlow<SignUpUiState> = _uiState.asStateFlow()
+
+    /**
+     * One-shot stream of (title, message) pairs surfaced as a custom toast.
+     * Collected by the screen via [com.example.moneyguard.core.arch.ObserveAsEvents].
+     */
+    private val _errorEvents = Channel<AuthErrorMessage>(Channel.BUFFERED)
+    val errorEvents: Flow<AuthErrorMessage> = _errorEvents.receiveAsFlow()
 
     override fun onFullNameChange(value: String) {
         _uiState.update { it.copy(fullName = value, fullNameError = null) }
@@ -38,7 +54,7 @@ class SignUpViewModel(
                 passwordError = null,
                 // If the user fixes the password, also clear a stale "mismatch"
                 // on confirm — they'll re-validate on submit anyway.
-                confirmPasswordError = null
+                confirmPasswordError = null,
             )
         }
     }
@@ -49,25 +65,39 @@ class SignUpViewModel(
 
     override fun onCreateAccountClick() {
         val current = _uiState.value
+        if (current.isLoading) return
+
         val errors = validate(current)
-//        if (errors.hasAny) {
-//            _uiState.update {
-//                it.copy(
-//                    fullNameError = errors.fullName,
-//                    emailError = errors.email,
-//                    passwordError = errors.password,
-//                    confirmPasswordError = errors.confirmPassword
-//                )
-//            }
-//            return
-//        }
-        // No real auth yet — we treat passing validation as "signed up" and
-        // jump out to the dashboard graph, popping the entire auth graph so
-        // the user can't swipe back into onboarding.
+        if (errors.hasAny) {
+            _uiState.update {
+                it.copy(
+                    fullNameError = errors.fullName,
+                    emailError = errors.email,
+                    passwordError = errors.password,
+                    confirmPasswordError = errors.confirmPassword,
+                )
+            }
+            return
+        }
+
+        _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            navigator.navigate(Destination.DashboardGraph) {
-                popUpTo(Destination.AuthGraph) { inclusive = true }
-                launchSingleTop = true
+            val result = signUpWithEmail(
+                email = current.email,
+                password = current.password,
+                displayName = current.fullName,
+            )
+            result.onSuccess {
+                navigator.navigate(Destination.DashboardGraph) {
+                    popUpTo(Destination.AuthGraph) { inclusive = true }
+                    launchSingleTop = true
+                }
+                // No need to clear isLoading — the screen is leaving anyway.
+            }.onFailure { throwable ->
+                val authError = (throwable as? AuthException)?.error
+                _uiState.update { it.copy(isLoading = false) }
+                val msg = authError?.toMessage() ?: unknownAuthErrorMessage()
+                _errorEvents.trySend(msg)
             }
         }
     }
@@ -110,7 +140,7 @@ class SignUpViewModel(
         val fullName: Int?,
         val email: Int?,
         val password: Int?,
-        val confirmPassword: Int?
+        val confirmPassword: Int?,
     ) {
         val hasAny: Boolean
             get() = fullName != null || email != null ||

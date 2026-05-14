@@ -21,6 +21,8 @@ import com.example.moneyguard.features.auth.login.ui.LoginScreen
 import com.example.moneyguard.features.auth.login.ui.LoginViewModel
 import com.example.moneyguard.features.auth.signup.ui.SignUpScreen
 import com.example.moneyguard.features.auth.signup.ui.SignUpViewModel
+import com.example.moneyguard.features.auth.splash.ui.SplashScreen
+import com.example.moneyguard.features.auth.splash.ui.SplashViewModel
 import com.example.moneyguard.features.dashboard.home.ui.HomeScreen
 import com.example.moneyguard.features.dashboard.home.ui.HomeViewModel
 import com.example.moneyguard.features.dashboard.setlimitandcategory.ui.SetYourLimitAndCategoryScreen
@@ -63,6 +65,10 @@ private fun MoneyGuardApp() {
         navController = navController,
         startDestination = navigator.startDestination
     ) {
+        composable<Destination.Splash> {
+            SplashScreen(viewModel = koinViewModel<SplashViewModel>())
+        }
+
         authGraph()
         dashboardGraph()
     }

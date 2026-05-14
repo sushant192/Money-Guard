@@ -19,6 +19,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface Destination {
 
+    // -------- Splash --------
+
+    /**
+     * Cold-start router. Decides whether the user goes into [AuthGraph] or
+     * [DashboardGraph] based on the cached Firebase user. Pops itself off the
+     * back stack once the decision is made.
+     */
+    @Serializable
+    data object Splash : Destination
+
     // -------- Graph routes --------
 
     @Serializable

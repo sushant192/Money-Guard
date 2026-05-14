@@ -11,6 +11,7 @@ data class HomeUiState(
     /** "Good morning," / "Good afternoon," / "Good evening," */
     val greetingPrefix: String,
     val userName: String,
+    val userEmail: String,
     val spentTodayRupees: Int,
     val dailyLimitRupees: Int,
     /** 0–100 for progress bar */
@@ -35,7 +36,8 @@ data class HomeUiState(
         val Initial = HomeUiState(
             selectedTab = DashboardTab.Home,
             greetingPrefix = "Good morning,",
-            userName = "Rahul",
+            userName = "Rahul Sharma",
+            userEmail = "rahul@gmail.com",
             spentTodayRupees = 950,
             dailyLimitRupees = 1500,
             budgetUsedPercent = 63,

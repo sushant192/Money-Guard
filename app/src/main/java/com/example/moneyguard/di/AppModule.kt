@@ -1,17 +1,24 @@
 package com.example.moneyguard.di
 
+import com.example.moneyguard.R
 import com.example.moneyguard.core.navigation.AppNavigator
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
+import com.example.moneyguard.features.auth.data.AuthRepositoryImpl
+import com.example.moneyguard.features.auth.data.GoogleSignInHelper
+import com.example.moneyguard.features.auth.domain.repository.AuthRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 /**
  * Manual bindings that need [org.koin.core.qualifier.Qualifier]s (e.g. dispatchers,
- * named navigators). Annotation-based bindings (`@KoinViewModel`, `@Single`)
- * live in [AppModules] and are picked up by the KSP scan.
+ * named navigators) or third-party constructors (Firebase, Credential Manager).
+ * Annotation-based bindings (`@KoinViewModel`, `@Factory`) live in [AppModules]
+ * and are picked up by the KSP scan.
  */
 val appModule = module {
 
@@ -20,10 +27,18 @@ val appModule = module {
     single<CoroutineDispatcher>(named("MainDispatcher")) { Dispatchers.Main.immediate }
     single<CoroutineDispatcher>(named("DefaultDispatcher")) { Dispatchers.Default }
 
-    // Navigation — start the app on the auth graph, which itself starts at
-    // GetStarted. Once we have a session-restore use case, this can return
-    // either AuthGraph or DashboardGraph based on whether the user is signed in.
+    // Navigation — start at Splash; the SplashViewModel decides whether to
+    // route into AuthGraph or DashboardGraph based on FirebaseAuth.currentUser.
     single<Navigator>(named("AppNavigator")) {
-        AppNavigator(startDestination = Destination.AuthGraph)
+        AppNavigator(startDestination = Destination.Splash)
     }
+
+    // Auth (Firebase + Credential Manager)
+    single { FirebaseAuth.getInstance() }
+    single {
+        GoogleSignInHelper(
+            webClientId = androidContext().getString(R.string.default_web_client_id),
+        )
+    }
+    single<AuthRepository> { AuthRepositoryImpl(get()) }
 }

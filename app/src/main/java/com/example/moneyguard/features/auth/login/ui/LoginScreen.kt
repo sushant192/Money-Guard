@@ -22,19 +22,25 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -52,20 +58,60 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.moneyguard.R
 import com.example.moneyguard.core.arch.BaseScreen
+import com.example.moneyguard.core.arch.ObserveAsEvents
 import com.example.moneyguard.ui.components.AppFilledTextField
+import com.example.moneyguard.ui.components.AuthErrorToast
+import com.example.moneyguard.ui.components.AuthErrorVisuals
 import com.example.moneyguard.ui.components.PasswordVisibilityToggle
 import com.example.moneyguard.ui.theme.BrandBlueMid
 import com.example.moneyguard.ui.theme.FieldBackground
 import com.example.moneyguard.ui.theme.MoneyGuardTheme
 import com.example.moneyguard.ui.theme.MutedText
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(viewModel: LoginViewModel) {
-    BaseScreen(viewModel) { state ->
-        LoginUiComponents(
-            state = state.value,
-            event = viewModel
-        )
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Each error event from the VM becomes a snackbar carrying our custom
+    // AuthErrorVisuals — the SnackbarHost below renders it via AuthErrorToast.
+    ObserveAsEvents(flow = viewModel.errorEvents) { msg ->
+        scope.launch {
+            snackbarHostState.showSnackbar(
+                AuthErrorVisuals(titleRes = msg.titleRes, messageRes = msg.messageRes),
+            )
+        }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            // The screen disables Scaffold's window insets (it handles status /
+            // nav bars internally), so we need to lift the snackbar above the
+            // nav bar + keyboard ourselves; otherwise it sits behind the
+            // gesture bar and the body text gets clipped.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(bottom = 12.dp),
+            ) {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    AuthErrorToast(data = data)
+                }
+            }
+        },
+        // The screen owns its own status / nav bar handling internally.
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0),
+        containerColor = Color.Transparent,
+    ) { _ ->
+        BaseScreen(viewModel) { state ->
+            LoginUiComponents(
+                state = state.value,
+                event = viewModel
+            )
+        }
     }
 }
 
@@ -76,6 +122,7 @@ private fun LoginUiComponents(
 ) {
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
 
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -169,15 +216,37 @@ private fun LoginUiComponents(
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = BrandBlueMid,
-                    contentColor = Color.White
+                    contentColor = Color.White,
+                    // Slightly dimmer blue while the request is in flight,
+                    // matching the design.
+                    disabledContainerColor = BrandBlueMid.copy(alpha = 0.65f),
+                    disabledContentColor = Color.White,
                 ),
                 elevation = ButtonDefaults.buttonElevation(0.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.login_cta),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                if (state.isLoading) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.login_logging_in),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.login_cta),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
             Spacer(Modifier.height(20.dp))
@@ -186,7 +255,10 @@ private fun LoginUiComponents(
 
             Spacer(Modifier.height(20.dp))
 
-            GoogleButton(onClick = event::onContinueWithGoogleClick)
+            GoogleButton(
+                enabled = !state.isLoading,
+                onClick = { event.onContinueWithGoogleClick(context) },
+            )
 
             Spacer(Modifier.height(16.dp))
 
@@ -261,9 +333,13 @@ private fun OrDivider() {
 }
 
 @Composable
-private fun GoogleButton(onClick: () -> Unit) {
+private fun GoogleButton(
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),
@@ -322,7 +398,7 @@ private fun LoginPreview() {
                 override fun onPasswordChange(value: String) = Unit
                 override fun onLoginClick() = Unit
                 override fun onForgotPasswordClick() = Unit
-                override fun onContinueWithGoogleClick() = Unit
+                override fun onContinueWithGoogleClick(activityContext: android.content.Context) = Unit
                 override fun onSignUpClick() = Unit
             }
         )
@@ -346,7 +422,7 @@ private fun LoginErrorPreview() {
                 override fun onPasswordChange(value: String) = Unit
                 override fun onLoginClick() = Unit
                 override fun onForgotPasswordClick() = Unit
-                override fun onContinueWithGoogleClick() = Unit
+                override fun onContinueWithGoogleClick(activityContext: android.content.Context) = Unit
                 override fun onSignUpClick() = Unit
             }
         )

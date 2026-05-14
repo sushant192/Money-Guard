@@ -77,6 +77,37 @@
     <string name="home_profile_content_description">Profile</string>
     <string name="home_fab_add_expense">Add expense</string>
 
+    <!-- Auth: button loading labels -->
+    <string name="login_logging_in">Logging in\u2026</string>
+    <string name="signup_creating_account">Creating account\u2026</string>
+
+    <!-- Auth errors: each toast shows a bold title + a softer body line -->
+    <string name="auth_error_invalid_credentials_title">Incorrect password</string>
+    <string name="auth_error_invalid_credentials_message">The password you entered doesn\'t match this account.</string>
+
+    <string name="auth_error_email_in_use_title">Email already in use</string>
+    <string name="auth_error_email_in_use_message">An account with this email already exists. Try logging in instead.</string>
+
+    <string name="auth_error_weak_password_title">Password too weak</string>
+    <string name="auth_error_weak_password_message">Try a longer password with letters and numbers.</string>
+
+    <string name="auth_error_user_not_found_title">Account not found</string>
+    <string name="auth_error_user_not_found_message">We couldn\'t find an account for this email.</string>
+
+    <string name="auth_error_network_title">No connection</string>
+    <string name="auth_error_network_message">Can\'t reach the server. Check your internet and try again.</string>
+
+    <string name="auth_error_unknown_title">Something went wrong</string>
+    <string name="auth_error_unknown_message">Please try again in a moment.</string>
+
+    <!-- Side drawer -->
+    <string name="drawer_open_content_description">Open menu</string>
+    <string name="drawer_manage_limits">Manage limits</string>
+    <string name="drawer_edit_profile">Edit profile</string>
+    <string name="drawer_notifications">Notifications</string>
+    <string name="drawer_export_data">Export data</string>
+    <string name="drawer_logout">Log out</string>
+
     <!-- History tab -->
     <string name="history_title">History</string>
     <string name="history_subtitle">All your transactions</string>

@@ -4,11 +4,11 @@ interface HomeUiEvents {
 
     fun onTabSelected(tab: DashboardTab)
 
-    fun onProfileClick()
-
     fun onSeeAllExpensesClick()
 
     fun onFabClick()
 
     fun onAlertThresholdSelect(threshold: AlertThreshold)
+
+    fun onLogoutClick()
 }

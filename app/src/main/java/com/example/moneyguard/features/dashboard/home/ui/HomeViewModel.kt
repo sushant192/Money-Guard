@@ -1,15 +1,24 @@
 package com.example.moneyguard.features.dashboard.home.ui
 
+import androidx.lifecycle.viewModelScope
 import com.example.moneyguard.core.arch.BaseComposeViewModel
+import com.example.moneyguard.core.navigation.Destination
+import com.example.moneyguard.core.navigation.Navigator
+import com.example.moneyguard.features.auth.domain.usecase.LogoutUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
+import org.koin.core.annotation.Named
 import java.util.Calendar
 
 @KoinViewModel
-class HomeViewModel : BaseComposeViewModel<HomeUiState>(),
+class HomeViewModel(
+    @Named("AppNavigator") private val navigator: Navigator,
+    private val logoutUseCase: LogoutUseCase,
+) : BaseComposeViewModel<HomeUiState>(),
     HomeUiEvents {
 
     private val _uiState = MutableStateFlow(
@@ -19,10 +28,6 @@ class HomeViewModel : BaseComposeViewModel<HomeUiState>(),
 
     override fun onTabSelected(tab: DashboardTab) {
         _uiState.update { it.copy(selectedTab = tab) }
-    }
-
-    override fun onProfileClick() {
-        // Profile screen lands in a later iteration.
     }
 
     override fun onSeeAllExpensesClick() {
@@ -37,6 +42,20 @@ class HomeViewModel : BaseComposeViewModel<HomeUiState>(),
 
     override fun onAlertThresholdSelect(threshold: AlertThreshold) {
         _uiState.update { it.copy(alertThreshold = threshold) }
+    }
+
+    override fun onLogoutClick() {
+        // Sign out from Firebase first, then bounce back to the auth graph
+        // and tear down the dashboard graph entirely so the user can't swipe
+        // back into a "logged-out" Home. AuthGraph's start destination
+        // (GetStarted) becomes the new top.
+        viewModelScope.launch {
+            logoutUseCase()
+            navigator.navigate(Destination.AuthGraph) {
+                popUpTo(Destination.DashboardGraph) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
     }
 
     companion object {

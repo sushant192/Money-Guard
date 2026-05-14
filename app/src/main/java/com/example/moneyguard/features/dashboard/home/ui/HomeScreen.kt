@@ -22,6 +22,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.automirrored.outlined.ShowChart
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowCircleRight
 import androidx.compose.material.icons.outlined.BarChart
@@ -30,35 +34,44 @@ import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Restaurant
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.automirrored.outlined.ShowChart
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.example.moneyguard.R
 import com.example.moneyguard.core.arch.BaseScreen
 import com.example.moneyguard.ui.theme.BrandBlue
@@ -84,6 +97,83 @@ fun HomeScreen(viewModel: HomeViewModel) {
 private fun HomeUiComponents(
     state: HomeUiState,
     event: HomeUiEvents,
+) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    // Drawer is fixed at 60% of the screen width, per design — wide enough
+    // for the avatar header + items, but never edge-to-edge.
+    val drawerWidth = (LocalConfiguration.current.screenWidthDp * 0.6f).dp
+    val openDrawer: () -> Unit = { scope.launch { drawerState.open() } }
+    val closeDrawer: () -> Unit = { scope.launch { drawerState.close() } }
+
+    // Material 3's ModalNavigationDrawer always opens from the *start* edge.
+     // Flipping LayoutDirection to RTL just for the drawer puts the sheet on
+     // the right (where the profile icon lives); we restore LTR on the actual
+     // sheet + content so layouts inside read top-to-bottom, left-to-right.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            // Only allow swipe-to-close once the drawer is already open. Disabling
+            // the swipe-to-open gesture avoids stealing horizontal scrolls from
+            // future tab content / charts.
+            gesturesEnabled = drawerState.isOpen,
+            drawerContent = {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    // We deliberately use a bare Surface (not ModalDrawerSheet)
+                    // here so we can set the width to exactly 60% of the screen.
+                    // ModalDrawerSheet internally caps the sheet at
+                    // DrawerDefaults.MaximumDrawerWidth (360.dp) which makes
+                    // the drawer look narrow on larger phones / tablets.
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(drawerWidth),
+                        // Round the inner edge of the right-side sheet so it
+                        // reads as a "card" tucked against the screen's right.
+                        shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
+                        color = Color.White,
+                        tonalElevation = 0.dp,
+                        shadowElevation = 1.dp,
+                    ) {
+                        DashboardDrawerContent(
+                            userName = state.userName,
+                            userEmail = state.userEmail,
+                            onManageLimits = {
+                                event.onTabSelected(DashboardTab.Limits)
+                                closeDrawer()
+                            },
+                            onEditProfile = closeDrawer,
+                            onNotifications = closeDrawer,
+                            onExportData = closeDrawer,
+                            onLogout = {
+                                // Close first so the drawer animation isn't fighting
+                                // a graph-level navigation; the screen will be torn
+                                // down anyway, but this keeps things smooth on slower
+                                // devices.
+                                closeDrawer()
+                                event.onLogoutClick()
+                            },
+                        )
+                    }
+                }
+            },
+        ) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                DashboardScaffold(
+                    state = state,
+                    event = event,
+                    onMenuClick = openDrawer,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardScaffold(
+    state: HomeUiState,
+    event: HomeUiEvents,
+    onMenuClick: () -> Unit,
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -151,7 +241,11 @@ private fun HomeUiComponents(
                 .padding(innerPadding),
         ) {
             when (state.selectedTab) {
-                DashboardTab.Home -> HomeTabContent(state = state, event = event)
+                DashboardTab.Home -> HomeTabContent(
+                    state = state,
+                    event = event,
+                    onMenuClick = onMenuClick,
+                )
                 DashboardTab.History -> HistoryTabContent(state = state)
                 DashboardTab.Stats -> StatsTabContent(state = state)
                 DashboardTab.Limits -> LimitsTabContent(state = state, event = event)
@@ -164,6 +258,7 @@ private fun HomeUiComponents(
 private fun HomeTabContent(
     state: HomeUiState,
     event: HomeUiEvents,
+    onMenuClick: () -> Unit,
 ) {
     val scroll = rememberScrollState()
     // Outer Box with a white background so any "empty" area below the
@@ -191,7 +286,7 @@ private fun HomeTabContent(
                 HomeHeaderRow(
                     greetingPrefix = state.greetingPrefix,
                     userName = state.userName,
-                    onProfileClick = event::onProfileClick,
+                    onMenuClick = onMenuClick,
                 )
                 Spacer(Modifier.height(20.dp))
                 SpentTodayCard(
@@ -844,11 +939,191 @@ private fun ThresholdChip(
 
 // endregion
 
+// region — Side drawer
+
+@Composable
+private fun DashboardDrawerContent(
+    userName: String,
+    userEmail: String,
+    onManageLimits: () -> Unit,
+    onEditProfile: () -> Unit,
+    onNotifications: () -> Unit,
+    onExportData: () -> Unit,
+    onLogout: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Blue header — avatar + name + email, sits behind the status bar.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(HomeHeaderBlue)
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(top = 24.dp, bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(76.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = initialsOf(userName),
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = userName,
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = userEmail,
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 13.sp,
+            )
+        }
+
+        // White sheet with rounded top edge — items go inside this.
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(y = (-20).dp),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            color = Color.White,
+            shadowElevation = 0.dp,
+            tonalElevation = 0.dp,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 18.dp),
+            ) {
+                DrawerItem(
+                    icon = Icons.Outlined.CreditCard,
+                    iconBackground = Color(0xFFE5EEFB),
+                    iconTint = BrandBlue,
+                    label = stringResource(R.string.drawer_manage_limits),
+                    onClick = onManageLimits,
+                )
+                DrawerDivider()
+                DrawerItem(
+                    icon = Icons.Outlined.Person,
+                    iconBackground = Color(0xFFE5EEFB),
+                    iconTint = BrandBlue,
+                    label = stringResource(R.string.drawer_edit_profile),
+                    onClick = onEditProfile,
+                )
+                DrawerDivider()
+                DrawerItem(
+                    icon = Icons.Outlined.WbSunny,
+                    iconBackground = Color(0xFFFFE6CC),
+                    iconTint = Color(0xFFF59E0B),
+                    label = stringResource(R.string.drawer_notifications),
+                    onClick = onNotifications,
+                )
+                DrawerDivider()
+                DrawerItem(
+                    icon = Icons.Outlined.AccountBalanceWallet,
+                    iconBackground = Color(0xFFD8F1DD),
+                    iconTint = Color(0xFF2E7D32),
+                    label = stringResource(R.string.drawer_export_data),
+                    onClick = onExportData,
+                )
+                DrawerDivider()
+                DrawerItem(
+                    icon = Icons.AutoMirrored.Outlined.Logout,
+                    iconBackground = Color(0xFFFEE2E2),
+                    iconTint = ErrorMain,
+                    label = stringResource(R.string.drawer_logout),
+                    labelColor = ErrorMain,
+                    onClick = onLogout,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DrawerItem(
+    icon: ImageVector,
+    iconBackground: Color,
+    iconTint: Color,
+    label: String,
+    onClick: () -> Unit,
+    labelColor: Color = Color(0xFF111827),
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(iconBackground),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = label,
+            color = labelColor,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MutedText,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+@Composable
+private fun DrawerDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        thickness = 1.dp,
+        color = Color(0xFFEEF1F4),
+    )
+}
+
+/** "Rahul Sharma" -> "RS", "Rahul" -> "R", "" -> "". */
+private fun initialsOf(name: String): String {
+    val parts = name.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    return when {
+        parts.isEmpty() -> ""
+        parts.size == 1 -> parts.first().take(1).uppercase()
+        else -> (parts.first().take(1) + parts.last().take(1)).uppercase()
+    }
+}
+
+// endregion
+
 @Composable
 private fun HomeHeaderRow(
     greetingPrefix: String,
     userName: String,
-    onProfileClick: () -> Unit,
+    onMenuClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -869,7 +1144,7 @@ private fun HomeHeaderRow(
             )
         }
         IconButton(
-            onClick = onProfileClick,
+            onClick = onMenuClick,
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
@@ -877,7 +1152,7 @@ private fun HomeHeaderRow(
         ) {
             Icon(
                 imageVector = Icons.Outlined.Person,
-                contentDescription = stringResource(R.string.home_profile_content_description),
+                contentDescription = stringResource(R.string.drawer_open_content_description),
                 tint = Color.White,
                 modifier = Modifier.size(26.dp),
             )
@@ -1120,10 +1395,10 @@ private fun HomePreview() {
             state = HomeUiState.Initial,
             event = object : HomeUiEvents {
                 override fun onTabSelected(tab: DashboardTab) = Unit
-                override fun onProfileClick() = Unit
                 override fun onSeeAllExpensesClick() = Unit
                 override fun onFabClick() = Unit
                 override fun onAlertThresholdSelect(threshold: AlertThreshold) = Unit
+                override fun onLogoutClick() = Unit
             },
         )
     }
