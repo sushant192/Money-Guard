@@ -76,6 +76,10 @@
     <string name="home_see_all">See all</string>
     <string name="home_profile_content_description">Profile</string>
     <string name="home_fab_add_expense">Add expense</string>
+    <string name="home_notification_access_title">Enable notification access</string>
+    <string name="home_notification_access_body">MoneyGuard needs notification access to detect payment alerts from apps like GPay, PhonePe, Paytm, banks, and cards automatically.</string>
+    <string name="home_notification_access_cta">Open settings</string>
+    <string name="notification_listener_service_label">MoneyGuard notification listener</string>
 
     <!-- Auth: button loading labels -->
     <string name="login_logging_in">Logging in\u2026</string>

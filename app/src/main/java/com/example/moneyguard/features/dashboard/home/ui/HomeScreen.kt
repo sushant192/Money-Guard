@@ -31,12 +31,15 @@ import androidx.compose.material.icons.outlined.ArrowCircleRight
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -63,6 +66,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
@@ -260,6 +264,7 @@ private fun HomeTabContent(
     event: HomeUiEvents,
     onMenuClick: () -> Unit,
 ) {
+    val context = LocalContext.current
     val scroll = rememberScrollState()
     // Outer Box with a white background so any "empty" area below the
     // expenses (when content is shorter than the screen, or when scrolled
@@ -315,6 +320,15 @@ private fun HomeTabContent(
                         .fillMaxWidth()
                         .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
                 ) {
+                    if (!state.hasNotificationAccess) {
+                        NotificationAccessPrompt(
+                            onEnableClick = {
+                                event.onEnableNotificationAccessClick(context)
+                            },
+                        )
+                        Spacer(Modifier.height(20.dp))
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -343,6 +357,77 @@ private fun HomeTabContent(
                         Spacer(Modifier.height(12.dp))
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotificationAccessPrompt(
+    onEnableClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFFF2F7FF),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(BrandBlue.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.NotificationsActive,
+                        contentDescription = null,
+                        tint = BrandBlue,
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_notification_access_title),
+                        color = Color(0xFF111827),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.home_notification_access_body),
+                        color = MutedText,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            Button(
+                onClick = onEnableClick,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BrandBlue,
+                    contentColor = Color.White,
+                ),
+            ) {
+                Text(
+                    text = stringResource(R.string.home_notification_access_cta),
+                    fontWeight = FontWeight.SemiBold,
+                )
             }
         }
     }
@@ -1398,6 +1483,7 @@ private fun HomePreview() {
                 override fun onSeeAllExpensesClick() = Unit
                 override fun onFabClick() = Unit
                 override fun onAlertThresholdSelect(threshold: AlertThreshold) = Unit
+                override fun onEnableNotificationAccessClick(activityContext: android.content.Context) = Unit
                 override fun onLogoutClick() = Unit
             },
         )
