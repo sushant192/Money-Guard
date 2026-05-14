@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.moneyguard.core.arch.BaseComposeViewModel
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
+import com.example.moneyguard.features.auth.domain.repository.AuthRepository
 import com.example.moneyguard.features.auth.domain.usecase.LogoutUseCase
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.ClearBudgetSetupUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,13 +19,18 @@ import java.util.Calendar
 @KoinViewModel
 class HomeViewModel(
     @Named("AppNavigator") private val navigator: Navigator,
+    private val authRepository: AuthRepository,
     private val logoutUseCase: LogoutUseCase,
     private val clearBudgetSetup: ClearBudgetSetupUseCase,
 ) : BaseComposeViewModel<HomeUiState>(),
     HomeUiEvents {
 
     private val _uiState = MutableStateFlow(
-        HomeUiState.Initial.copy(greetingPrefix = greetingPrefixForHour(Calendar.getInstance()))
+        HomeUiState.Initial.copy(
+            greetingPrefix = greetingPrefixForHour(Calendar.getInstance()),
+            userName = currentUserDisplayName(),
+            userEmail = authRepository.currentUser?.email.orEmpty(),
+        )
     )
     override val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -70,5 +76,15 @@ class HomeViewModel(
                 else -> "Good evening,"
             }
         }
+    }
+
+    private fun currentUserDisplayName(): String {
+        val user = authRepository.currentUser
+        return user?.displayName
+            ?.takeIf { it.isNotBlank() }
+            ?: user?.email
+                ?.substringBefore("@")
+                ?.takeIf { it.isNotBlank() }
+            ?: HomeUiState.Initial.userName
     }
 }
