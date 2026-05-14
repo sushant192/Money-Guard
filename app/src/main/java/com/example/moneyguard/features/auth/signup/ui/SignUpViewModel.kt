@@ -11,6 +11,7 @@ import com.example.moneyguard.features.auth.domain.model.AuthException
 import com.example.moneyguard.features.auth.domain.model.toMessage
 import com.example.moneyguard.features.auth.domain.model.unknownAuthErrorMessage
 import com.example.moneyguard.features.auth.domain.usecase.SignUpWithEmailUseCase
+import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.HasCompletedBudgetSetupUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ import org.koin.core.annotation.Named
 class SignUpViewModel(
     @Named("AppNavigator") private val navigator: Navigator,
     private val signUpWithEmail: SignUpWithEmailUseCase,
+    private val hasCompletedBudgetSetup: HasCompletedBudgetSetupUseCase,
 ) : BaseComposeViewModel<SignUpUiState>(),
     SignUpUiEvents {
 
@@ -88,7 +90,12 @@ class SignUpViewModel(
                 displayName = current.fullName,
             )
             result.onSuccess {
-                navigator.navigate(Destination.DashboardGraph) {
+                val target = if (hasCompletedBudgetSetup()) {
+                    Destination.Home
+                } else {
+                    Destination.DashboardGraph
+                }
+                navigator.navigate(target) {
                     popUpTo(Destination.AuthGraph) { inclusive = true }
                     launchSingleTop = true
                 }

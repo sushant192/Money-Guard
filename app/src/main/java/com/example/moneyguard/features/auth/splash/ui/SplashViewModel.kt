@@ -5,6 +5,7 @@ import com.example.moneyguard.core.arch.BaseComposeViewModel
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
 import com.example.moneyguard.features.auth.domain.repository.AuthRepository
+import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.HasCompletedBudgetSetupUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +25,7 @@ import org.koin.core.annotation.Named
 class SplashViewModel(
     @Named("AppNavigator") private val navigator: Navigator,
     private val authRepository: AuthRepository,
+    private val hasCompletedBudgetSetup: HasCompletedBudgetSetupUseCase,
 ) : BaseComposeViewModel<SplashUiState>() {
 
     private val _uiState = MutableStateFlow(SplashUiState.Initial)
@@ -31,10 +33,10 @@ class SplashViewModel(
 
     init {
         viewModelScope.launch {
-            val target = if (authRepository.currentUser != null) {
-                Destination.DashboardGraph
-            } else {
-                Destination.AuthGraph
+            val target = when {
+                authRepository.currentUser == null -> Destination.AuthGraph
+                hasCompletedBudgetSetup() -> Destination.Home
+                else -> Destination.DashboardGraph
             }
             navigator.navigate(target) {
                 popUpTo(Destination.Splash) { inclusive = true }

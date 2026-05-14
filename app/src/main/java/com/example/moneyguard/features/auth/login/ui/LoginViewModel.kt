@@ -15,6 +15,7 @@ import com.example.moneyguard.features.auth.domain.model.toMessage
 import com.example.moneyguard.features.auth.domain.model.unknownAuthErrorMessage
 import com.example.moneyguard.features.auth.domain.usecase.LoginWithEmailUseCase
 import com.example.moneyguard.features.auth.domain.usecase.SignInWithGoogleUseCase
+import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.HasCompletedBudgetSetupUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,7 @@ class LoginViewModel(
     private val loginWithEmail: LoginWithEmailUseCase,
     private val signInWithGoogle: SignInWithGoogleUseCase,
     private val googleSignInHelper: GoogleSignInHelper,
+    private val hasCompletedBudgetSetup: HasCompletedBudgetSetupUseCase,
 ) : BaseComposeViewModel<LoginUiState>(),
     LoginUiEvents {
 
@@ -105,10 +107,12 @@ class LoginViewModel(
     }
 
     private suspend fun navigateToDashboard() {
-        // Returning users skip the limit/category onboarding and land directly
-        // on Home; the entire auth graph is popped so the user can't swipe
-        // back into login.
-        navigator.navigate(Destination.Home) {
+        val target = if (hasCompletedBudgetSetup()) {
+            Destination.Home
+        } else {
+            Destination.DashboardGraph
+        }
+        navigator.navigate(target) {
             popUpTo(Destination.AuthGraph) { inclusive = true }
             launchSingleTop = true
         }

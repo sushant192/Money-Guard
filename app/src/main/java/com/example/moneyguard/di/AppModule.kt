@@ -7,6 +7,8 @@ import com.example.moneyguard.core.navigation.Navigator
 import com.example.moneyguard.features.auth.data.AuthRepositoryImpl
 import com.example.moneyguard.features.auth.data.GoogleSignInHelper
 import com.example.moneyguard.features.auth.domain.repository.AuthRepository
+import com.example.moneyguard.features.dashboard.setlimitandcategory.data.BudgetSetupRepositoryImpl
+import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.repository.BudgetSetupRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -41,4 +43,6 @@ val appModule = module {
         )
     }
     single<AuthRepository> { AuthRepositoryImpl(get()) }
+
+    single<BudgetSetupRepository> { BudgetSetupRepositoryImpl(get()) }
 }

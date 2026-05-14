@@ -5,6 +5,7 @@ import com.example.moneyguard.core.arch.BaseComposeViewModel
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
 import com.example.moneyguard.features.auth.domain.usecase.LogoutUseCase
+import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.ClearBudgetSetupUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +19,7 @@ import java.util.Calendar
 class HomeViewModel(
     @Named("AppNavigator") private val navigator: Navigator,
     private val logoutUseCase: LogoutUseCase,
+    private val clearBudgetSetup: ClearBudgetSetupUseCase,
 ) : BaseComposeViewModel<HomeUiState>(),
     HomeUiEvents {
 
@@ -50,6 +52,7 @@ class HomeViewModel(
         // back into a "logged-out" Home. AuthGraph's start destination
         // (GetStarted) becomes the new top.
         viewModelScope.launch {
+            clearBudgetSetup()
             logoutUseCase()
             navigator.navigate(Destination.AuthGraph) {
                 popUpTo(Destination.DashboardGraph) { inclusive = true }

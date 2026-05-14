@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.moneyguard.core.arch.BaseComposeViewModel
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
+import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.SaveBudgetSetupUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +15,8 @@ import org.koin.core.annotation.Named
 
 @KoinViewModel
 class SetYourLimitAndCategoryViewModel(
-    @Named("AppNavigator") private val navigator: Navigator
+    @Named("AppNavigator") private val navigator: Navigator,
+    private val saveBudgetSetup: SaveBudgetSetupUseCase,
 ) : BaseComposeViewModel<SetYourLimitAndCategoryUiState>(),
     SetYourLimitAndCategoryUiEvents {
 
@@ -39,6 +41,7 @@ class SetYourLimitAndCategoryViewModel(
     }
 
     override fun onContinueClick() {
+        if (_uiState.value.isLoading) return
         when (_uiState.value.step) {
             SetLimitStep.LIMIT -> {
                 _uiState.update { it.copy(step = SetLimitStep.CATEGORIES) }
@@ -48,6 +51,7 @@ class SetYourLimitAndCategoryViewModel(
     }
 
     override fun onBackClick() {
+        if (_uiState.value.isLoading) return
         // Only meaningful from the categories step. Flipping back to LIMIT
         // keeps any user-made selections in state so they aren't lost.
         if (_uiState.value.step == SetLimitStep.CATEGORIES) {
@@ -56,13 +60,22 @@ class SetYourLimitAndCategoryViewModel(
     }
 
     private fun finishOnboarding() {
-        // Persistence (Room + DataStore) lands in the next iteration. For now,
-        // hop to Home and pop this onboarding step off the back stack so the
-        // user can't swipe back into it.
         viewModelScope.launch {
-            navigator.navigate(Destination.Home) {
-                popUpTo(Destination.SetLimitAndCategory) { inclusive = true }
-                launchSingleTop = true
+            val current = _uiState.value
+            _uiState.update { it.copy(isLoading = true) }
+
+            runCatching {
+                saveBudgetSetup(
+                    limit = current.limit,
+                    selectedCategories = current.selectedCategories.map(Category::name).toSet(),
+                )
+            }.onSuccess {
+                navigator.navigate(Destination.Home) {
+                    popUpTo(Destination.SetLimitAndCategory) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }.onFailure {
+                _uiState.update { state -> state.copy(isLoading = false) }
             }
         }
     }
