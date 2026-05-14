@@ -59,6 +59,14 @@
     <string name="set_limit_continue">Continue</string>
     <string name="set_limit_cta">All done — let\'s go!</string>
     <string name="set_limit_back">Go back</string>
+    <string name="set_limit_notification_title">Allow notification access</string>
+    <string name="set_limit_notification_subtitle">MoneyGuard needs notification access to read payment alerts from apps like GPay, PhonePe, Paytm, banks, and cards automatically.</string>
+    <string name="set_limit_notification_retry_title">Notification access still off</string>
+    <string name="set_limit_notification_retry_subtitle">You can enable it now to start auto-logging spends, or continue for now and set it up later from system settings.</string>
+    <string name="set_limit_notification_granted_title">Notification access granted</string>
+    <string name="set_limit_notification_granted_subtitle">You\'re all set. MoneyGuard can now listen for payment alerts and start auto-detecting your spends.</string>
+    <string name="set_limit_notification_open_settings">Open settings</string>
+    <string name="set_limit_notification_later">I\'ll do it later</string>
 
     <!-- Dashboard / Home -->
     <string name="tab_home">Home</string>
@@ -76,9 +84,6 @@
     <string name="home_see_all">See all</string>
     <string name="home_profile_content_description">Profile</string>
     <string name="home_fab_add_expense">Add expense</string>
-    <string name="home_notification_access_title">Enable notification access</string>
-    <string name="home_notification_access_body">MoneyGuard needs notification access to detect payment alerts from apps like GPay, PhonePe, Paytm, banks, and cards automatically.</string>
-    <string name="home_notification_access_cta">Open settings</string>
     <string name="notification_listener_service_label">MoneyGuard notification listener</string>
 
     <!-- Auth: button loading labels -->

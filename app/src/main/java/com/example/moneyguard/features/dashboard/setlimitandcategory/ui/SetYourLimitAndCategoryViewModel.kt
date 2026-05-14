@@ -1,9 +1,11 @@
 package com.example.moneyguard.features.dashboard.setlimitandcategory.ui
 
+import android.content.Context
 import androidx.lifecycle.viewModelScope
 import com.example.moneyguard.core.arch.BaseComposeViewModel
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
+import com.example.moneyguard.core.notifications.NotificationAccessManager
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.SaveBudgetSetupUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,12 +18,23 @@ import org.koin.core.annotation.Named
 @KoinViewModel
 class SetYourLimitAndCategoryViewModel(
     @Named("AppNavigator") private val navigator: Navigator,
+    private val notificationAccessManager: NotificationAccessManager,
     private val saveBudgetSetup: SaveBudgetSetupUseCase,
 ) : BaseComposeViewModel<SetYourLimitAndCategoryUiState>(),
     SetYourLimitAndCategoryUiEvents {
 
-    private val _uiState = MutableStateFlow(SetYourLimitAndCategoryUiState.Initial)
+    private val _uiState = MutableStateFlow(
+        SetYourLimitAndCategoryUiState.Initial.copy(
+            hasNotificationAccess = notificationAccessManager.hasNotificationAccess(),
+        )
+    )
     override val uiState: StateFlow<SetYourLimitAndCategoryUiState> = _uiState.asStateFlow()
+
+    override fun onActive() {
+        _uiState.update {
+            it.copy(hasNotificationAccess = notificationAccessManager.hasNotificationAccess())
+        }
+    }
 
     override fun onLimitChange(value: Int) {
         _uiState.update {
@@ -46,17 +59,33 @@ class SetYourLimitAndCategoryViewModel(
             SetLimitStep.LIMIT -> {
                 _uiState.update { it.copy(step = SetLimitStep.CATEGORIES) }
             }
-            SetLimitStep.CATEGORIES -> finishOnboarding()
+            SetLimitStep.CATEGORIES -> {
+                _uiState.update { it.copy(step = SetLimitStep.NOTIFICATION_ACCESS) }
+            }
+            SetLimitStep.NOTIFICATION_ACCESS -> Unit
         }
     }
 
     override fun onBackClick() {
         if (_uiState.value.isLoading) return
-        // Only meaningful from the categories step. Flipping back to LIMIT
-        // keeps any user-made selections in state so they aren't lost.
-        if (_uiState.value.step == SetLimitStep.CATEGORIES) {
-            _uiState.update { it.copy(step = SetLimitStep.LIMIT) }
+        when (_uiState.value.step) {
+            SetLimitStep.CATEGORIES -> {
+                // Flipping back to LIMIT keeps any user-made selections in
+                // state so they aren't lost.
+                _uiState.update { it.copy(step = SetLimitStep.LIMIT) }
+            }
+            else -> Unit
         }
+    }
+
+    override fun onOpenNotificationSettingsClick(activityContext: Context) {
+        _uiState.update { it.copy(hasOpenedNotificationSettings = true) }
+        notificationAccessManager.openNotificationAccessSettings(activityContext)
+    }
+
+    override fun onFinishClick() {
+        if (_uiState.value.isLoading) return
+        finishOnboarding()
     }
 
     private fun finishOnboarding() {

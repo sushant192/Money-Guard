@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowCircleRight
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.ShoppingBag
@@ -42,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -69,6 +71,8 @@ private fun SetYourLimitAndCategoryUiComponents(
     state: SetYourLimitAndCategoryUiState,
     event: SetYourLimitAndCategoryUiEvents
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -113,6 +117,14 @@ private fun SetYourLimitAndCategoryUiComponents(
                     onToggle = event::onCategoryToggle
                 )
             }
+            SetLimitStep.NOTIFICATION_ACCESS -> NotificationAccessSection(
+                state = state,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 24.dp, bottom = 24.dp)
+            )
         }
 
         Column(
@@ -121,21 +133,65 @@ private fun SetYourLimitAndCategoryUiComponents(
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 16.dp, top = 8.dp)
         ) {
-            PrimaryButton(
-                label = stringResource(state.step.ctaLabel),
-                enabled = !state.isLoading,
-                onClick = event::onContinueClick,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            if (state.step == SetLimitStep.CATEGORIES) {
-                Spacer(Modifier.height(8.dp))
-                SecondaryButton(
-                    label = stringResource(R.string.set_limit_back),
-                    enabled = !state.isLoading,
-                    onClick = event::onBackClick,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            when (state.step) {
+                SetLimitStep.LIMIT -> {
+                    PrimaryButton(
+                        label = stringResource(R.string.set_limit_continue),
+                        enabled = !state.isLoading,
+                        onClick = event::onContinueClick,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                SetLimitStep.CATEGORIES -> {
+                    PrimaryButton(
+                        label = stringResource(R.string.set_limit_continue),
+                        enabled = !state.isLoading,
+                        onClick = event::onContinueClick,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    SecondaryButton(
+                        label = stringResource(R.string.set_limit_back),
+                        enabled = !state.isLoading,
+                        onClick = event::onBackClick,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                SetLimitStep.NOTIFICATION_ACCESS -> {
+                    when {
+                        state.hasNotificationAccess -> {
+                            PrimaryButton(
+                                label = stringResource(R.string.set_limit_cta),
+                                enabled = !state.isLoading,
+                                onClick = event::onFinishClick,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        state.hasOpenedNotificationSettings -> {
+                            PrimaryButton(
+                                label = stringResource(R.string.set_limit_notification_open_settings),
+                                enabled = !state.isLoading,
+                                onClick = { event.onOpenNotificationSettingsClick(context) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            SecondaryButton(
+                                label = stringResource(R.string.set_limit_notification_later),
+                                enabled = !state.isLoading,
+                                onClick = event::onFinishClick,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        else -> {
+                            PrimaryButton(
+                                label = stringResource(R.string.set_limit_notification_open_settings),
+                                enabled = !state.isLoading,
+                                onClick = { event.onOpenNotificationSettingsClick(context) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -382,6 +438,60 @@ private fun Category.icon(): ImageVector = when (this) {
 
 // endregion
 
+// region — Notification access section
+
+@Composable
+private fun NotificationAccessSection(
+    state: SetYourLimitAndCategoryUiState,
+    modifier: Modifier = Modifier,
+) {
+    val titleRes = when {
+        state.hasNotificationAccess -> R.string.set_limit_notification_granted_title
+        state.hasOpenedNotificationSettings -> R.string.set_limit_notification_retry_title
+        else -> R.string.set_limit_notification_title
+    }
+    val subtitleRes = when {
+        state.hasNotificationAccess -> R.string.set_limit_notification_granted_subtitle
+        state.hasOpenedNotificationSettings -> R.string.set_limit_notification_retry_subtitle
+        else -> R.string.set_limit_notification_subtitle
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        TranslucentIconBadge(
+            icon = Icons.Outlined.NotificationsActive,
+            modifier = Modifier.size(76.dp),
+            iconSize = 32.dp,
+            cornerRadius = 18.dp,
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        Text(
+            text = stringResource(titleRes),
+            color = Color.White,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(Modifier.height(10.dp))
+
+        Text(
+            text = stringResource(subtitleRes),
+            color = Color.White.copy(alpha = 0.60f),
+            fontSize = 15.sp,
+            lineHeight = 22.sp,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+// endregion
+
 // region — Shared bits (step dots, badge, CTA)
 
 private const val STEP_DOT_COUNT = 3
@@ -390,12 +500,7 @@ private val SetLimitStep.dotIndex: Int
     get() = when (this) {
         SetLimitStep.LIMIT -> 0
         SetLimitStep.CATEGORIES -> 1
-    }
-
-private val SetLimitStep.ctaLabel: Int
-    get() = when (this) {
-        SetLimitStep.LIMIT -> R.string.set_limit_continue
-        SetLimitStep.CATEGORIES -> R.string.set_limit_cta
+        SetLimitStep.NOTIFICATION_ACCESS -> 2
     }
 
 @Composable
@@ -527,6 +632,8 @@ private fun SetLimitStepPreview() {
                 step = SetLimitStep.LIMIT,
                 limit = 2_500,
                 selectedCategories = emptySet(),
+                hasNotificationAccess = false,
+                hasOpenedNotificationSettings = false,
                 isLoading = false
             ),
             event = NoOpSetLimitEvents
@@ -543,6 +650,26 @@ private fun SetCategoriesStepPreview() {
                 step = SetLimitStep.CATEGORIES,
                 limit = 2_500,
                 selectedCategories = setOf(Category.TRAVEL, Category.FOOD),
+                hasNotificationAccess = false,
+                hasOpenedNotificationSettings = false,
+                isLoading = false
+            ),
+            event = NoOpSetLimitEvents
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Step 3 — Notification Access")
+@Composable
+private fun NotificationAccessStepPreview() {
+    MoneyGuardTheme {
+        SetYourLimitAndCategoryUiComponents(
+            state = SetYourLimitAndCategoryUiState(
+                step = SetLimitStep.NOTIFICATION_ACCESS,
+                limit = 2_500,
+                selectedCategories = setOf(Category.TRAVEL, Category.FOOD),
+                hasNotificationAccess = false,
+                hasOpenedNotificationSettings = true,
                 isLoading = false
             ),
             event = NoOpSetLimitEvents
@@ -555,4 +682,6 @@ private val NoOpSetLimitEvents = object : SetYourLimitAndCategoryUiEvents {
     override fun onCategoryToggle(category: Category) = Unit
     override fun onContinueClick() = Unit
     override fun onBackClick() = Unit
+    override fun onOpenNotificationSettingsClick(activityContext: android.content.Context) = Unit
+    override fun onFinishClick() = Unit
 }

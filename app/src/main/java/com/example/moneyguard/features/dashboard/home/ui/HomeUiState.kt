@@ -30,7 +30,6 @@ data class HomeUiState(
     val weeklyLimitRupees: Int,
     val weeklySpentRupees: Int,
     val alertThreshold: AlertThreshold,
-    val hasNotificationAccess: Boolean,
     val isLoading: Boolean,
 ) : UiState {
     companion object {
@@ -54,7 +53,6 @@ data class HomeUiState(
             weeklyLimitRupees = 8_000,
             weeklySpentRupees = 3_500,
             alertThreshold = AlertThreshold.Seventy,
-            hasNotificationAccess = true,
             isLoading = false,
         )
 
