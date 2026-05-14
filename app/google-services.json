@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "309560186673",
+    "project_id": "moneyguard-2d671",
+    "storage_bucket": "moneyguard-2d671.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:309560186673:android:a95b94dbb605df90f34210",
+        "android_client_info": {
+          "package_name": "com.example.moneyguard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "309560186673-jlak2l0jkue2b6ea59c4ept2gcjii85j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.moneyguard",
+            "certificate_hash": "5bb339b03e41c5a887c66c6f252f602833cfab42"
+          }
+        },
+        {
+          "client_id": "309560186673-kat4u0pml118d2llnnc8gde87qhp6361.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOOYOZdke3NBCzKCq40J3Tj7IyYwhImC8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "309560186673-kat4u0pml118d2llnnc8gde87qhp6361.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
