@@ -8,6 +8,8 @@ import com.example.moneyguard.core.navigation.Navigator
 import com.example.moneyguard.core.notifications.NotificationAccessManager
 import com.example.moneyguard.features.auth.domain.repository.AuthRepository
 import com.example.moneyguard.features.auth.domain.usecase.LogoutUseCase
+import com.example.moneyguard.features.dashboard.home.data.HomeExpenseSnapshot
+import com.example.moneyguard.features.dashboard.home.domain.repository.ExpenseRepository
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.ClearBudgetSetupUseCase
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.GetDailyLimitUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,10 +19,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 import org.koin.core.annotation.Named
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 @KoinViewModel
 class HomeViewModel(
@@ -30,6 +29,7 @@ class HomeViewModel(
     private val logoutUseCase: LogoutUseCase,
     private val clearBudgetSetup: ClearBudgetSetupUseCase,
     private val getDailyLimit: GetDailyLimitUseCase,
+    private val expenseRepository: ExpenseRepository,
 ) : BaseComposeViewModel<HomeUiState>(),
     HomeUiEvents {
 
@@ -45,6 +45,29 @@ class HomeViewModel(
 
     init {
         refreshSavedDailyLimit()
+        viewModelScope.launch {
+            expenseRepository.observeAllExpenses().collect { entities ->
+                val snapshot = HomeExpenseSnapshot.from(entities, Calendar.getInstance())
+                _uiState.update { state ->
+                    val limit = state.dailyLimitRupees.coerceAtLeast(1)
+                    val remaining = (state.dailyLimitRupees - snapshot.spentTodayRupees).coerceAtLeast(0)
+                    val usedPercent =
+                        ((snapshot.spentTodayRupees * 100f) / limit).toInt().coerceIn(0, 100)
+                    state.copy(
+                        todayExpenses = snapshot.todayExpenseItems,
+                        historyGroups = snapshot.historyGroups,
+                        spentTodayRupees = snapshot.spentTodayRupees,
+                        transactionCount = snapshot.transactionCountToday,
+                        monthSpentRupees = snapshot.monthSpentRupees,
+                        weeklySpentRupees = snapshot.weeklySpentRupees,
+                        categoryBreakdown = snapshot.categoryBreakdown,
+                        weekDailyBars = snapshot.weekDailyBars,
+                        remainingRupees = remaining,
+                        budgetUsedPercent = usedPercent,
+                    )
+                }
+            }
+        }
     }
 
     override fun onActive() {
@@ -80,38 +103,15 @@ class HomeViewModel(
     ) {
         if (amountRupees <= 0) return
         val trimmedTitle = title.ifBlank { "Expense" }
-        val timeStr = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
-        val categoryLabel = categoryMetaLabel(category)
         val trimmedNote = note.trim()
-        val metaLine = buildString {
-            append(categoryLabel)
-            append(" · ")
-            append(timeStr)
-            if (trimmedNote.isNotEmpty()) {
-                append(" · ")
-                append(trimmedNote)
-            }
-        }
-        val item = ExpenseItemUi(
-            title = trimmedTitle,
-            metaLine = metaLine,
-            amountRupees = amountRupees,
-            paymentLabel = "Manual",
-            iconStyle = category,
-        )
-        _uiState.update { state ->
-            val spent = state.spentTodayRupees + amountRupees
-            val limit = state.dailyLimitRupees.coerceAtLeast(1)
-            val remaining = (state.dailyLimitRupees - spent).coerceAtLeast(0)
-            val usedPercent = ((spent * 100f) / limit).toInt().coerceIn(0, 100)
-            state.copy(
-                todayExpenses = listOf(item) + state.todayExpenses,
-                spentTodayRupees = spent,
-                remainingRupees = remaining,
-                budgetUsedPercent = usedPercent,
-                transactionCount = state.transactionCount + 1,
-                showAddExpenseSheet = false,
+        viewModelScope.launch {
+            expenseRepository.insertManualExpense(
+                title = trimmedTitle,
+                amountRupees = amountRupees,
+                note = trimmedNote,
+                category = category,
             )
+            _uiState.update { it.copy(showAddExpenseSheet = false) }
         }
     }
 
@@ -125,7 +125,7 @@ class HomeViewModel(
 
     override fun onLogoutClick() {
         // Sign out from Firebase first, then bounce back to the auth graph
-        // and tear down the dashboard graph entirely so the user can't swipe
+        // and tear down the dashboard graph entirely so the user can't swipeaaaaa
         // back into a "logged-out" Home. AuthGraph's start destination
         // (GetStarted) becomes the new top.
         viewModelScope.launch {
@@ -157,14 +157,6 @@ class HomeViewModel(
                 ?.substringBefore("@")
                 ?.takeIf { it.isNotBlank() }
             ?: HomeUiState.Initial.userName
-    }
-
-    private fun categoryMetaLabel(category: ExpenseIconStyle): String = when (category) {
-        ExpenseIconStyle.Entertainment -> "Entertainment"
-        ExpenseIconStyle.Food -> "Food"
-        ExpenseIconStyle.Transfer -> "Transfer"
-        ExpenseIconStyle.Bills -> "Bills"
-        ExpenseIconStyle.Travel -> "Travel"
     }
 
     private fun refreshSavedDailyLimit() {

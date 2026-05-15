@@ -1,12 +1,17 @@
 package com.example.moneyguard.di
 
+import androidx.room.Room
 import com.example.moneyguard.R
 import com.example.moneyguard.core.navigation.AppNavigator
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
+import com.example.moneyguard.data.local.MoneyGuardDatabase
+import com.example.moneyguard.data.local.dao.ExpenseDao
 import com.example.moneyguard.features.auth.data.AuthRepositoryImpl
 import com.example.moneyguard.features.auth.data.GoogleSignInHelper
 import com.example.moneyguard.features.auth.domain.repository.AuthRepository
+import com.example.moneyguard.features.dashboard.home.data.ExpenseRepositoryImpl
+import com.example.moneyguard.features.dashboard.home.domain.repository.ExpenseRepository
 import com.example.moneyguard.features.dashboard.setlimitandcategory.data.BudgetSetupRepositoryImpl
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.repository.BudgetSetupRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -45,4 +50,15 @@ val appModule = module {
     single<AuthRepository> { AuthRepositoryImpl(get()) }
 
     single<BudgetSetupRepository> { BudgetSetupRepositoryImpl(get()) }
+
+    single {
+        Room.databaseBuilder(
+            androidContext(),
+            MoneyGuardDatabase::class.java,
+            "moneyguard.db",
+        ).fallbackToDestructiveMigration()
+            .build()
+    }
+    single<ExpenseDao> { get<MoneyGuardDatabase>().expenseDao() }
+    single<ExpenseRepository> { ExpenseRepositoryImpl(get()) }
 }
