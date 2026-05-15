@@ -10,6 +10,15 @@ interface HomeUiEvents {
 
     fun onFabClick()
 
+    fun onDismissAddExpenseSheet()
+
+    fun onSaveManualExpense(
+        amountRupees: Int,
+        title: String,
+        note: String,
+        category: ExpenseIconStyle,
+    )
+
     fun onAlertThresholdSelect(threshold: AlertThreshold)
 
     fun onGrantNotificationAccessClick(activityContext: Context)

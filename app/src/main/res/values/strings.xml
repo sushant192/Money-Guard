@@ -92,6 +92,17 @@
     <string name="home_empty_title">No expenses yet today</string>
     <string name="home_empty_body">Your expenses will appear here automatically as soon as a payment notification comes in.</string>
     <string name="home_empty_tip">Make a UPI payment and it\'ll show up here instantly — no manual entry needed.</string>
+
+    <string name="add_expense_title">Add expense</string>
+    <string name="add_expense_close_cd">Close</string>
+    <string name="add_expense_field_title_label">Title</string>
+    <string name="add_expense_field_title_placeholder">e.g. Coffee at Starbucks…</string>
+    <string name="add_expense_category_heading">CATEGORY</string>
+    <string name="add_expense_field_note_label">Note (optional)</string>
+    <string name="add_expense_field_note_placeholder">Add a note…</string>
+    <string name="add_expense_save">Save expense</string>
+    <string name="add_expense_keypad_back_cd">Backspace</string>
+
     <string name="notification_listener_service_label">MoneyGuard notification listener</string>
 
     <!-- Auth: button loading labels -->

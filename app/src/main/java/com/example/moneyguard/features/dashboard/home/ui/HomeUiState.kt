@@ -32,6 +32,7 @@ data class HomeUiState(
     val alertThreshold: AlertThreshold,
     val hasNotificationAccess: Boolean,
     val isLoading: Boolean,
+    val showAddExpenseSheet: Boolean,
 ) : UiState {
     companion object {
         val Initial = HomeUiState(
@@ -56,6 +57,7 @@ data class HomeUiState(
             alertThreshold = AlertThreshold.Seventy,
             hasNotificationAccess = true,
             isLoading = false,
+            showAddExpenseSheet = false,
         )
 
         fun sampleCategoryBreakdown(): List<CategorySpendUi> = listOf(

@@ -17,7 +17,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.android.annotation.KoinViewModel
 import org.koin.core.annotation.Named
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @KoinViewModel
 class HomeViewModel(
@@ -62,7 +65,54 @@ class HomeViewModel(
     }
 
     override fun onFabClick() {
-        // Manual expense entry — wire when feature exists.
+        _uiState.update { it.copy(showAddExpenseSheet = true) }
+    }
+
+    override fun onDismissAddExpenseSheet() {
+        _uiState.update { it.copy(showAddExpenseSheet = false) }
+    }
+
+    override fun onSaveManualExpense(
+        amountRupees: Int,
+        title: String,
+        note: String,
+        category: ExpenseIconStyle,
+    ) {
+        if (amountRupees <= 0) return
+        val trimmedTitle = title.ifBlank { "Expense" }
+        val timeStr = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+        val categoryLabel = categoryMetaLabel(category)
+        val trimmedNote = note.trim()
+        val metaLine = buildString {
+            append(categoryLabel)
+            append(" · ")
+            append(timeStr)
+            if (trimmedNote.isNotEmpty()) {
+                append(" · ")
+                append(trimmedNote)
+            }
+        }
+        val item = ExpenseItemUi(
+            title = trimmedTitle,
+            metaLine = metaLine,
+            amountRupees = amountRupees,
+            paymentLabel = "Manual",
+            iconStyle = category,
+        )
+        _uiState.update { state ->
+            val spent = state.spentTodayRupees + amountRupees
+            val limit = state.dailyLimitRupees.coerceAtLeast(1)
+            val remaining = (state.dailyLimitRupees - spent).coerceAtLeast(0)
+            val usedPercent = ((spent * 100f) / limit).toInt().coerceIn(0, 100)
+            state.copy(
+                todayExpenses = listOf(item) + state.todayExpenses,
+                spentTodayRupees = spent,
+                remainingRupees = remaining,
+                budgetUsedPercent = usedPercent,
+                transactionCount = state.transactionCount + 1,
+                showAddExpenseSheet = false,
+            )
+        }
     }
 
     override fun onAlertThresholdSelect(threshold: AlertThreshold) {
@@ -107,6 +157,14 @@ class HomeViewModel(
                 ?.substringBefore("@")
                 ?.takeIf { it.isNotBlank() }
             ?: HomeUiState.Initial.userName
+    }
+
+    private fun categoryMetaLabel(category: ExpenseIconStyle): String = when (category) {
+        ExpenseIconStyle.Entertainment -> "Entertainment"
+        ExpenseIconStyle.Food -> "Food"
+        ExpenseIconStyle.Transfer -> "Transfer"
+        ExpenseIconStyle.Bills -> "Bills"
+        ExpenseIconStyle.Travel -> "Travel"
     }
 
     private fun refreshSavedDailyLimit() {

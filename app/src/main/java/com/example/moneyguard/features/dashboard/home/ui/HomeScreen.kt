@@ -28,7 +28,6 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ArrowCircleRight
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CreditCard
@@ -37,6 +36,7 @@ import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.PriorityHigh
+import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Star
@@ -118,59 +118,77 @@ private fun HomeUiComponents(
      // the right (where the profile icon lives); we restore LTR on the actual
      // sheet + content so layouts inside read top-to-bottom, left-to-right.
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            // Only allow swipe-to-close once the drawer is already open. Disabling
-            // the swipe-to-open gesture avoids stealing horizontal scrolls from
-            // future tab content / charts.
-            gesturesEnabled = drawerState.isOpen,
-            drawerContent = {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                    // We deliberately use a bare Surface (not ModalDrawerSheet)
-                    // here so we can set the width to exactly 60% of the screen.
-                    // ModalDrawerSheet internally caps the sheet at
-                    // DrawerDefaults.MaximumDrawerWidth (360.dp) which makes
-                    // the drawer look narrow on larger phones / tablets.
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .width(drawerWidth),
-                        // Round the inner edge of the right-side sheet so it
-                        // reads as a "card" tucked against the screen's right.
-                        shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
-                        color = Color.White,
-                        tonalElevation = 0.dp,
-                        shadowElevation = 1.dp,
-                    ) {
-                        DashboardDrawerContent(
-                            userName = state.userName,
-                            userEmail = state.userEmail,
-                            onManageLimits = {
-                                event.onTabSelected(DashboardTab.Limits)
-                                closeDrawer()
-                            },
-                            onEditProfile = closeDrawer,
-                            onNotifications = closeDrawer,
-                            onExportData = closeDrawer,
-                            onLogout = {
-                                // Close first so the drawer animation isn't fighting
-                                // a graph-level navigation; the screen will be torn
-                                // down anyway, but this keeps things smooth on slower
-                                // devices.
-                                closeDrawer()
-                                event.onLogoutClick()
-                            },
-                        )
+        // Keep the expense sheet outside the drawer’s main content so the modal
+        // covers the full window (including the bottom nav) instead of stacking
+        // with it like a sibling column.
+        Box(modifier = Modifier.fillMaxSize()) {
+            ModalNavigationDrawer(
+                modifier = Modifier.fillMaxSize(),
+                drawerState = drawerState,
+                // Only allow swipe-to-close once the drawer is already open. Disabling
+                // the swipe-to-open gesture avoids stealing horizontal scrolls from
+                // future tab content / charts.
+                gesturesEnabled = drawerState.isOpen,
+                drawerContent = {
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                        // We deliberately use a bare Surface (not ModalDrawerSheet)
+                        // here so we can set the width to exactly 60% of the screen.
+                        // ModalDrawerSheet internally caps the sheet at
+                        // DrawerDefaults.MaximumDrawerWidth (360.dp) which makes
+                        // the drawer look narrow on larger phones / tablets.
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(drawerWidth),
+                            // Round the inner edge of the right-side sheet so it
+                            // reads as a "card" tucked against the screen's right.
+                            shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
+                            color = Color.White,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 1.dp,
+                        ) {
+                            DashboardDrawerContent(
+                                userName = state.userName,
+                                userEmail = state.userEmail,
+                                onManageLimits = {
+                                    event.onTabSelected(DashboardTab.Limits)
+                                    closeDrawer()
+                                },
+                                onEditProfile = closeDrawer,
+                                onNotifications = closeDrawer,
+                                onExportData = closeDrawer,
+                                onLogout = {
+                                    // Close first so the drawer animation isn't fighting
+                                    // a graph-level navigation; the screen will be torn
+                                    // down anyway, but this keeps things smooth on slower
+                                    // devices.
+                                    closeDrawer()
+                                    event.onLogoutClick()
+                                },
+                            )
+                        }
                     }
+                },
+            ) {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    DashboardScaffold(
+                        state = state,
+                        event = event,
+                        onMenuClick = openDrawer,
+                    )
                 }
-            },
-        ) {
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                DashboardScaffold(
-                    state = state,
-                    event = event,
-                    onMenuClick = openDrawer,
-                )
+            }
+            if (state.showAddExpenseSheet) {
+                // Modal must be LTR: the drawer uses a parent RTL hack; without this,
+                // rows, keypad order, and horizontalScroll all mirror incorrectly.
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    AddExpenseBottomSheet(
+                        onDismiss = event::onDismissAddExpenseSheet,
+                        onSave = { amount, title, note, category ->
+                            event.onSaveManualExpense(amount, title, note, category)
+                        },
+                    )
+                }
             }
         }
     }
@@ -190,7 +208,7 @@ private fun DashboardScaffold(
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0.dp),
         floatingActionButton = {
-            if (state.selectedTab == DashboardTab.Home) {
+            if (state.selectedTab == DashboardTab.Home && !state.showAddExpenseSheet) {
                 FloatingActionButton(
                     onClick = event::onFabClick,
                     modifier = Modifier.size(56.dp),
@@ -206,37 +224,39 @@ private fun DashboardScaffold(
             }
         },
         bottomBar = {
-            // Wrap the NavigationBar in a Column so we can paint a thin
-            // hairline divider above it — gives the tab bar a clear edge
-            // against the white content area, matching the design.
-            Column {
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = Color(0xFFE5E7EB),
-                )
-                NavigationBar(
-                    containerColor = Color.White,
-                    tonalElevation = 0.dp,
-                ) {
-                    DashboardTab.entries.forEach { tab ->
-                        NavigationBarItem(
-                            selected = state.selectedTab == tab,
-                            onClick = { event.onTabSelected(tab) },
-                            icon = {
-                                Icon(
-                                    imageVector = tab.icon(),
-                                    contentDescription = stringResource(tab.labelRes),
-                                )
-                            },
-                            label = { Text(text = stringResource(tab.labelRes)) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = BrandBlue,
-                                selectedTextColor = BrandBlue,
-                                indicatorColor = BrandBlue.copy(alpha = 0.12f),
-                                unselectedIconColor = MutedText,
-                                unselectedTextColor = MutedText,
-                            ),
-                        )
+            if (!state.showAddExpenseSheet) {
+                // Wrap the NavigationBar in a Column so we can paint a thin
+                // hairline divider above it — gives the tab bar a clear edge
+                // against the white content area, matching the design.
+                Column {
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = Color(0xFFE5E7EB),
+                    )
+                    NavigationBar(
+                        containerColor = Color.White,
+                        tonalElevation = 0.dp,
+                    ) {
+                        DashboardTab.entries.forEach { tab ->
+                            NavigationBarItem(
+                                selected = state.selectedTab == tab,
+                                onClick = { event.onTabSelected(tab) },
+                                icon = {
+                                    Icon(
+                                        imageVector = tab.icon(),
+                                        contentDescription = stringResource(tab.labelRes),
+                                    )
+                                },
+                                label = { Text(text = stringResource(tab.labelRes)) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = BrandBlue,
+                                    selectedTextColor = BrandBlue,
+                                    indicatorColor = BrandBlue.copy(alpha = 0.12f),
+                                    unselectedIconColor = MutedText,
+                                    unselectedTextColor = MutedText,
+                                ),
+                            )
+                        }
                     }
                 }
             }
@@ -1822,16 +1842,21 @@ private fun ExpenseIconBadge(style: ExpenseIconStyle) {
         ExpenseIconStyle.Transfer -> {
             bg = Color(0xFFD8F1DD) // soft mint
             tint = Color(0xFF2E7D32)
-            icon = Icons.Outlined.ArrowCircleRight
+            icon = Icons.Outlined.Remove
         }
         ExpenseIconStyle.Food -> {
             bg = Color(0xFFFFE6C9) // soft peach
             tint = Color(0xFFE67E22)
             icon = Icons.Outlined.Restaurant
         }
+        ExpenseIconStyle.Bills -> {
+            bg = Color(0xFFE5EEFB)
+            tint = Color(0xFF2563EB)
+            icon = Icons.Outlined.CreditCard
+        }
         ExpenseIconStyle.Travel -> {
-            bg = Color(0xFFEAE2FB) // very soft lavender
-            tint = Color(0xFF8E24AA)
+            bg = Color(0xFFFFE4EC)
+            tint = Color(0xFFE91E63)
             icon = Icons.Outlined.LocationOn
         }
     }
@@ -1882,6 +1907,14 @@ private fun HomePreview() {
                 override fun onTabSelected(tab: DashboardTab) = Unit
                 override fun onSeeAllExpensesClick() = Unit
                 override fun onFabClick() = Unit
+                override fun onDismissAddExpenseSheet() = Unit
+                override fun onSaveManualExpense(
+                    amountRupees: Int,
+                    title: String,
+                    note: String,
+                    category: ExpenseIconStyle,
+                ) = Unit
+
                 override fun onAlertThresholdSelect(threshold: AlertThreshold) = Unit
                 override fun onGrantNotificationAccessClick(activityContext: android.content.Context) = Unit
                 override fun onLogoutClick() = Unit

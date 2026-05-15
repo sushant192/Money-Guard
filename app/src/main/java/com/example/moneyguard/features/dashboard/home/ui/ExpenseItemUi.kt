@@ -7,6 +7,7 @@ enum class ExpenseIconStyle {
     Entertainment,
     Transfer,
     Food,
+    Bills,
     Travel,
 }
 
