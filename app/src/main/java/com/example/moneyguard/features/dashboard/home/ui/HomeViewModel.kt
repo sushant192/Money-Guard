@@ -74,6 +74,7 @@ class HomeViewModel(
                         remainingRupees = remaining,
                         budgetUsedPercent = usedPercent,
                         selectedExpenseDetail = refreshedDetail,
+                        isExpensesLoading = false,
                     )
                 }
             }

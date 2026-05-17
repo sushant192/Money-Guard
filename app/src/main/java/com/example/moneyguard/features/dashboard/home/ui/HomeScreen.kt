@@ -310,7 +310,7 @@ private fun HomeTabContent(
         return
     }
 
-    if (state.todayExpenses.isEmpty()) {
+    if (state.todayExpenses.isEmpty() && !state.isExpensesLoading) {
         EmptyHomeContent(
             state = state,
             onMenuClick = onMenuClick,
@@ -395,12 +395,16 @@ private fun HomeTabContent(
                         )
                     }
                     Spacer(Modifier.height(18.dp))
-                    state.todayExpenses.forEach { expense ->
-                        ExpenseRow(
-                            item = expense,
-                            onClick = { event.onExpenseClick(expense.id) },
-                        )
-                        Spacer(Modifier.height(12.dp))
+                    if (state.isExpensesLoading) {
+                        TodayExpensesShimmer()
+                    } else {
+                        state.todayExpenses.forEach { expense ->
+                            ExpenseRow(
+                                item = expense,
+                                onClick = { event.onExpenseClick(expense.id) },
+                            )
+                            Spacer(Modifier.height(12.dp))
+                        }
                     }
                 }
             }

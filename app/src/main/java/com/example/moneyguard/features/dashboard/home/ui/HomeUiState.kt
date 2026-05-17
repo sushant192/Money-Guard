@@ -32,6 +32,8 @@ data class HomeUiState(
     val alertThreshold: AlertThreshold,
     val hasNotificationAccess: Boolean,
     val isLoading: Boolean,
+    /** True until the first Room emission for expenses (avoids empty-state flash). */
+    val isExpensesLoading: Boolean,
     val showAddExpenseSheet: Boolean,
     val selectedExpenseDetail: ExpenseDetailUi? = null,
     val expenseEditDraft: ExpenseEditDraft? = null,
@@ -59,6 +61,7 @@ data class HomeUiState(
             alertThreshold = AlertThreshold.Seventy,
             hasNotificationAccess = true,
             isLoading = false,
+            isExpensesLoading = true,
             showAddExpenseSheet = false,
         )
 
