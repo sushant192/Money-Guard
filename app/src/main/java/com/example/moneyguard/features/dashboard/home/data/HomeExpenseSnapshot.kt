@@ -181,21 +181,31 @@ private fun categoryMetaLabel(category: ExpenseIconStyle): String = when (catego
 private fun ExpenseEntity.toExpenseItemUi(): ExpenseItemUi {
     val style = category.toExpenseIconStyle()
     val timeStr = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(createdAtEpochMs))
-    val metaLine = buildString {
-        append(categoryMetaLabel(style))
-        append(" · ")
-        append(timeStr)
-        val trimmed = note.trim()
-        if (trimmed.isNotEmpty()) {
-            append(" · ")
-            append(trimmed)
+    val isFromNotification = sourceKey != null
+
+    val displayTitle =
+        when {
+            isFromNotification && !title.startsWith("UPI to ", ignoreCase = true) ->
+                "UPI to ${title.removePrefix("Payment").trim().ifBlank { title }}"
+            else -> title
         }
-    }
+
+    val metaLine = "${categoryMetaLabel(style)} · $timeStr"
+
+    val paymentLabel =
+        when {
+            paymentSource.equals("Manual", ignoreCase = true) -> paymentSource
+            isFromNotification -> "UPI"
+            paymentSource.equals("UPI", ignoreCase = true) -> "UPI"
+            paymentSource.equals("Card", ignoreCase = true) -> "Card"
+            else -> "UPI"
+        }
+
     return ExpenseItemUi(
-        title = title,
+        title = displayTitle,
         metaLine = metaLine,
         amountRupees = amountRupees,
-        paymentLabel = paymentSource,
+        paymentLabel = paymentLabel,
         iconStyle = style,
     )
 }

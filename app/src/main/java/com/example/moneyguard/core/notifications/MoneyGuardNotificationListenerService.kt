@@ -2,29 +2,20 @@ package com.example.moneyguard.core.notifications
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import android.util.Log
+import org.koin.android.ext.android.inject
 
 /**
  * System entry point for reading posted notifications after the user grants
- * Notification Access. The actual parsing / categorisation pipeline will plug
- * into this service next.
+ * Notification Access. Runs in the app process (even when UI is not visible) and
+ * forwards payment debits to Room via [NotificationExpenseProcessor].
  */
 class MoneyGuardNotificationListenerService : NotificationListenerService() {
+
+    private val processor: NotificationExpenseProcessor by inject()
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         val notification = sbn ?: return
-
-        // Placeholder hook for the spend-detection pipeline. Keeping a small
-        // log here makes it easy to confirm that Notification Access wiring is
-        // alive before we add parsing + persistence.
-        Log.d(
-            TAG,
-            "Notification received from ${notification.packageName}"
-        )
-    }
-
-    companion object {
-        private const val TAG = "MoneyGuardNotifSvc"
+        processor.onNotificationPosted(notification)
     }
 }

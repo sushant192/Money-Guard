@@ -26,12 +26,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -448,7 +448,7 @@ private fun categoryVisual(category: ExpenseIconStyle): CategoryVisual = when (c
         softBg = Color(0xFFFFE6C9),
     )
     ExpenseIconStyle.Transfer -> CategoryVisual(
-        icon = Icons.Outlined.Remove,
+        icon = Icons.AutoMirrored.Outlined.ArrowForward,
         tint = Color(0xFF2E7D32),
         softBg = Color(0xFFD8F1DD),
     )

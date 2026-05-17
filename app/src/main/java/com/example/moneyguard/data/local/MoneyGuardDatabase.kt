@@ -7,7 +7,7 @@ import com.example.moneyguard.data.local.entity.ExpenseEntity
 
 @Database(
     entities = [ExpenseEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class MoneyGuardDatabase : RoomDatabase() {

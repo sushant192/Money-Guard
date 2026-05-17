@@ -13,4 +13,18 @@ interface ExpenseRepository {
         note: String,
         category: ExpenseIconStyle,
     )
+
+    /**
+     * Persists a notification-derived debit. Returns false if [sourceKey] was
+     * already stored (duplicate notification).
+     */
+    suspend fun insertNotificationExpense(
+        sourceKey: String,
+        title: String,
+        amountRupees: Int,
+        note: String,
+        category: ExpenseIconStyle,
+        paymentSource: String,
+        createdAtEpochMs: Long,
+    ): Boolean
 }

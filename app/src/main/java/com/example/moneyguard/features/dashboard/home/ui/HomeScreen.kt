@@ -935,7 +935,10 @@ private fun HistoryRow(item: HistoryItemUi) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ExpenseIconBadge(style = item.iconStyle)
+        ExpenseIconBadge(
+            style = item.iconStyle,
+            useUpiPaymentIcon = item.title.startsWith("UPI to ", ignoreCase = true),
+        )
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -1791,7 +1794,10 @@ private fun ExpenseRow(item: ExpenseItemUi) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ExpenseIconBadge(style = item.iconStyle)
+        ExpenseIconBadge(
+            style = item.iconStyle,
+            useUpiPaymentIcon = item.paymentLabel.equals("UPI", ignoreCase = true),
+        )
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -1824,55 +1830,6 @@ private fun ExpenseRow(item: ExpenseItemUi) {
                 color = MutedText,
             )
         }
-    }
-}
-
-@Composable
-private fun ExpenseIconBadge(style: ExpenseIconStyle) {
-    // Pastel tile background + saturated glyph on top, matching the prototype.
-    val bg: Color
-    val tint: Color
-    val icon: ImageVector
-    when (style) {
-        ExpenseIconStyle.Entertainment -> {
-            bg = Color(0xFFE9DEFD) // soft lavender
-            tint = Color(0xFF7C4DFF)
-            icon = Icons.Outlined.PlayCircle
-        }
-        ExpenseIconStyle.Transfer -> {
-            bg = Color(0xFFD8F1DD) // soft mint
-            tint = Color(0xFF2E7D32)
-            icon = Icons.Outlined.Remove
-        }
-        ExpenseIconStyle.Food -> {
-            bg = Color(0xFFFFE6C9) // soft peach
-            tint = Color(0xFFE67E22)
-            icon = Icons.Outlined.Restaurant
-        }
-        ExpenseIconStyle.Bills -> {
-            bg = Color(0xFFE5EEFB)
-            tint = Color(0xFF2563EB)
-            icon = Icons.Outlined.CreditCard
-        }
-        ExpenseIconStyle.Travel -> {
-            bg = Color(0xFFFFE4EC)
-            tint = Color(0xFFE91E63)
-            icon = Icons.Outlined.LocationOn
-        }
-    }
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(bg),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(22.dp),
-        )
     }
 }
 

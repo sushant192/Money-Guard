@@ -27,7 +27,32 @@ class ExpenseRepositoryImpl(
                 category = category.name,
                 paymentSource = "Manual",
                 createdAtEpochMs = System.currentTimeMillis(),
+                sourceKey = null,
             ),
         )
+    }
+
+    override suspend fun insertNotificationExpense(
+        sourceKey: String,
+        title: String,
+        amountRupees: Int,
+        note: String,
+        category: ExpenseIconStyle,
+        paymentSource: String,
+        createdAtEpochMs: Long,
+    ): Boolean {
+        val rowId =
+            dao.insert(
+                ExpenseEntity(
+                    title = title,
+                    amountRupees = amountRupees,
+                    note = note,
+                    category = category.name,
+                    paymentSource = paymentSource,
+                    createdAtEpochMs = createdAtEpochMs,
+                    sourceKey = sourceKey,
+                ),
+            )
+        return rowId != -1L
     }
 }
