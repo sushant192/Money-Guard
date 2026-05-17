@@ -42,3 +42,30 @@ val ErrorOnDark = Color(0xFFFFB4AB)
 
 /** Home dashboard header — matches primary marketing / prototype blue. */
 val HomeHeaderBlue = Color(0xFF1E75D5)
+
+/** Home header background — same blue family as [BrandGradient] on the set-limit flow. */
+val HomeHeaderBlueGradient =
+    Brush.verticalGradient(
+        colorStops =
+            arrayOf(
+                0.00f to BrandBlueStart,
+                0.50f to BrandBlueMid,
+                1.00f to HomeHeaderBlue,
+            ),
+    )
+
+/** Home header when daily spend is over the limit. */
+val HomeHeaderOverLimitGradient =
+    Brush.verticalGradient(
+        colorStops =
+            arrayOf(
+                0.00f to Color(0xFF7A1515),
+                0.45f to Color(0xFFC62828),
+                1.00f to Color(0xFFE53935),
+            ),
+    )
+
+/** Solid tone at the bottom of the sticky greeting strip — matches gradient top stop. */
+val HomeStickyHeaderBlue = BrandBlueStart
+
+val HomeStickyHeaderOverLimit = Color(0xFF7A1515)

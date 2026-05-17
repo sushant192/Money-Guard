@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,12 +14,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -40,6 +43,7 @@ import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -60,16 +64,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +94,10 @@ import com.example.moneyguard.ui.theme.BrandBlue
 import com.example.moneyguard.ui.theme.ErrorMain
 import com.example.moneyguard.ui.theme.FieldBackground
 import com.example.moneyguard.ui.theme.HomeHeaderBlue
+import com.example.moneyguard.ui.theme.HomeHeaderBlueGradient
+import com.example.moneyguard.ui.theme.HomeHeaderOverLimitGradient
+import com.example.moneyguard.ui.theme.HomeStickyHeaderBlue
+import com.example.moneyguard.ui.theme.HomeStickyHeaderOverLimit
 import com.example.moneyguard.ui.theme.MoneyGuardTheme
 import com.example.moneyguard.ui.theme.MutedText
 import kotlinx.coroutines.launch
@@ -313,39 +327,26 @@ private fun HomeTabContent(
     if (state.todayExpenses.isEmpty() && !state.isExpensesLoading) {
         EmptyHomeContent(
             state = state,
+            event = event,
             onMenuClick = onMenuClick,
         )
         return
     }
 
-    // Outer Box with a white background so any "empty" area below the
-    // expenses (when content is shorter than the screen, or when scrolled
-    // up) reads as white instead of the blue header colour bleeding through.
-    // The blue header is now drawn ONLY on the inner header column.
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scroll),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(HomeHeaderBlue)
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp)
-                    .padding(top = 8.dp, bottom = 32.dp),
-            ) {
-                HomeHeaderRow(
-                    greetingPrefix = state.greetingPrefix,
-                    userName = state.userName,
-                    onMenuClick = onMenuClick,
-                )
-                Spacer(Modifier.height(20.dp))
+    val isOverDailyLimit = state.isOverDailyLimit()
+
+    HomeTabScrollLayout(
+        isOverDailyLimit = isOverDailyLimit,
+        scrollState = scroll,
+        stickyContent = {
+            HomeStickyGreetingBar(
+                state = state,
+                onMenuClick = onMenuClick,
+                showOverLimitBadge = isOverDailyLimit,
+            )
+        },
+        spentContent = {
+            HomeSpentTodaySection {
                 SpentTodayCard(
                     spentRupees = state.spentTodayRupees,
                     dailyLimitRupees = state.dailyLimitRupees,
@@ -353,94 +354,43 @@ private fun HomeTabContent(
                     remainingRupees = state.remainingRupees,
                     transactionCount = state.transactionCount,
                     savedRupees = state.savedRupees,
+                    isOverDailyLimit = isOverDailyLimit,
+                    overLimitRupees = state.overLimitRupees(),
                 )
             }
-
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    // Pull the white sheet up so it overlaps the blue header
-                    // for the rounded-shoulder look.
-                    .offset(y = (-20).dp),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                color = Color.White,
-                shadowElevation = 0.dp,
-                tonalElevation = 0.dp,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_today_expenses),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF111827),
-                        )
-                        Text(
-                            text = stringResource(R.string.home_see_all),
-                            color = BrandBlue,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { event.onSeeAllExpensesClick() }
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                        )
-                    }
-                    Spacer(Modifier.height(18.dp))
-                    if (state.isExpensesLoading) {
-                        TodayExpensesShimmer()
-                    } else {
-                        state.todayExpenses.forEach { expense ->
-                            ExpenseRow(
-                                item = expense,
-                                onClick = { event.onExpenseClick(expense.id) },
-                            )
-                            Spacer(Modifier.height(12.dp))
-                        }
-                    }
-                }
-            }
-        }
-    }
+        },
+        sheetContent = { sheetModifier ->
+            HomeTodayExpensesSheet(
+                modifier = sheetModifier,
+                state = state,
+                event = event,
+                isOverDailyLimit = isOverDailyLimit,
+            )
+        },
+    )
 }
 
 @Composable
 private fun EmptyHomeContent(
     state: HomeUiState,
+    event: HomeUiEvents,
     onMenuClick: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(HomeHeaderBlue)
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp)
-                    .padding(top = 8.dp, bottom = 32.dp),
-            ) {
-                HomeHeaderRow(
-                    greetingPrefix = state.greetingPrefix,
-                    userName = state.userName,
-                    onMenuClick = onMenuClick,
-                )
-                Spacer(Modifier.height(20.dp))
+    val isOverDailyLimit = state.isOverDailyLimit()
+    val scroll = rememberScrollState()
+
+    HomeTabScrollLayout(
+        isOverDailyLimit = isOverDailyLimit,
+        scrollState = scroll,
+        stickyContent = {
+            HomeStickyGreetingBar(
+                state = state,
+                onMenuClick = onMenuClick,
+                showOverLimitBadge = isOverDailyLimit,
+            )
+        },
+        spentContent = {
+            HomeSpentTodaySection {
                 SpentTodayCard(
                     spentRupees = state.spentTodayRupees,
                     dailyLimitRupees = state.dailyLimitRupees,
@@ -448,31 +398,18 @@ private fun EmptyHomeContent(
                     remainingRupees = state.remainingRupees,
                     transactionCount = state.transactionCount,
                     savedRupees = state.savedRupees,
+                    isOverDailyLimit = isOverDailyLimit,
+                    overLimitRupees = state.overLimitRupees(),
                 )
             }
-
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = (-20).dp),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                color = Color.White,
-                shadowElevation = 0.dp,
-                tonalElevation = 0.dp,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_today_expenses),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827),
-                        modifier = Modifier.align(Alignment.Start),
-                    )
+        },
+        sheetContent = { sheetModifier ->
+            HomeTodayExpensesSheet(
+                modifier = sheetModifier,
+                state = state,
+                event = event,
+                isOverDailyLimit = isOverDailyLimit,
+                emptyContent = {
                     Spacer(Modifier.height(36.dp))
                     NoExpensesIllustration()
                     Spacer(Modifier.height(28.dp))
@@ -500,9 +437,10 @@ private fun EmptyHomeContent(
                         shadowElevation = 0.dp,
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 16.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
@@ -521,10 +459,10 @@ private fun EmptyHomeContent(
                             )
                         }
                     }
-                }
-            }
-        }
-    }
+                },
+            )
+        },
+    )
 }
 
 @Composable
@@ -533,100 +471,172 @@ private fun PermissionPendingHomeContent(
     onMenuClick: () -> Unit,
     onGrantClick: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(HomeHeaderBlue)
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp)
-                    .padding(top = 8.dp, bottom = 32.dp),
-            ) {
-                HomeHeaderRow(
-                    greetingPrefix = state.greetingPrefix,
-                    userName = state.userName,
-                    onMenuClick = onMenuClick,
-                )
-                Spacer(Modifier.height(20.dp))
+    val scroll = rememberScrollState()
+
+    HomeTabScrollLayout(
+        isOverDailyLimit = false,
+        scrollState = scroll,
+        stickyContent = {
+            HomeStickyGreetingBar(
+                state = state,
+                onMenuClick = onMenuClick,
+                showOverLimitBadge = false,
+            )
+        },
+        spentContent = {
+            HomeSpentTodaySection {
                 AwaitingAccessCard(dailyLimitRupees = state.dailyLimitRupees)
             }
-
+        },
+        sheetContent = { sheetModifier ->
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = (-20).dp),
+                modifier =
+                    sheetModifier
+                        .offset(y = (-20).dp),
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 color = Color.White,
                 shadowElevation = 0.dp,
                 tonalElevation = 0.dp,
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight()
+                            .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        text = stringResource(R.string.home_today_expenses),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827),
-                        modifier = Modifier.align(Alignment.Start),
-                    )
-                    Spacer(Modifier.height(36.dp))
-                    NotificationAccessIllustration()
-                    Spacer(Modifier.height(28.dp))
-                    Text(
-                        text = stringResource(R.string.home_permission_needed_title),
-                        color = Color(0xFF111827),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.home_permission_needed_body),
-                        color = MutedText,
-                        fontSize = 14.sp,
-                        lineHeight = 22.sp,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(26.dp))
-                    Button(
-                        onClick = onGrantClick,
-                        modifier = Modifier
+                Text(
+                    text = stringResource(R.string.home_today_expenses),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF111827),
+                    modifier = Modifier.align(Alignment.Start),
+                )
+                Spacer(Modifier.height(36.dp))
+                NotificationAccessIllustration()
+                Spacer(Modifier.height(28.dp))
+                Text(
+                    text = stringResource(R.string.home_permission_needed_title),
+                    color = Color(0xFF111827),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.home_permission_needed_body),
+                    color = MutedText,
+                    fontSize = 14.sp,
+                    lineHeight = 22.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(26.dp))
+                Button(
+                    onClick = onGrantClick,
+                    modifier =
+                        Modifier
                             .fillMaxWidth()
                             .height(58.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(
+                    shape = RoundedCornerShape(18.dp),
+                    colors =
+                        ButtonDefaults.buttonColors(
                             containerColor = BrandBlue,
                             contentColor = Color.White,
                         ),
-                        elevation = ButtonDefaults.buttonElevation(0.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_permission_needed_cta),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                        )
-                    }
-                    Spacer(Modifier.height(18.dp))
+                    elevation = ButtonDefaults.buttonElevation(0.dp),
+                ) {
                     Text(
-                        text = stringResource(R.string.home_permission_needed_note),
-                        color = MutedText.copy(alpha = 0.75f),
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp,
-                        textAlign = TextAlign.Center,
+                        text = stringResource(R.string.home_permission_needed_cta),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
                     )
+                }
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    text = stringResource(R.string.home_permission_needed_note),
+                    color = MutedText.copy(alpha = 0.75f),
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+        },
+    )
+}
+
+@Composable
+private fun HomeTodayExpensesSheet(
+    modifier: Modifier = Modifier,
+    state: HomeUiState,
+    event: HomeUiEvents,
+    isOverDailyLimit: Boolean,
+    emptyContent: (@Composable () -> Unit)? = null,
+) {
+    Surface(
+        modifier =
+            modifier
+                .offset(y = (-20).dp),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        color = Color.White,
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
+            horizontalAlignment = Alignment.Start,
+        ) {
+            if (isOverDailyLimit && !state.isExpensesLoading) {
+                DailyLimitExceededBanner(overByRupees = state.overLimitRupees())
+                Spacer(Modifier.height(16.dp))
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.home_today_expenses),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF111827),
+                )
+                if (emptyContent == null) {
+                    Text(
+                        text = stringResource(R.string.home_see_all),
+                        color = BrandBlue,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        modifier =
+                            Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { event.onSeeAllExpensesClick() }
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.height(18.dp))
+            if (emptyContent != null) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    emptyContent()
+                }
+            } else if (state.isExpensesLoading) {
+                TodayExpensesShimmer()
+            } else {
+                state.todayExpenses.forEach { expense ->
+                    ExpenseRow(
+                        item = expense,
+                        onClick = { event.onExpenseClick(expense.id) },
+                    )
+                    Spacer(Modifier.height(12.dp))
                 }
             }
         }
@@ -1653,17 +1663,129 @@ private fun initialsOf(name: String): String {
 // endregion
 
 @Composable
+private fun HomeTabScrollLayout(
+    isOverDailyLimit: Boolean,
+    scrollState: ScrollState,
+    stickyContent: @Composable () -> Unit,
+    spentContent: @Composable () -> Unit,
+    sheetContent: @Composable (Modifier) -> Unit,
+) {
+    val scrollGradient =
+        if (isOverDailyLimit) HomeHeaderOverLimitGradient else HomeHeaderBlueGradient
+    val stickyBackdrop =
+        if (isOverDailyLimit) HomeStickyHeaderOverLimit else HomeStickyHeaderBlue
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color.White),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(stickyBackdrop)
+                    .statusBarsPadding()
+                    .zIndex(1f),
+        ) {
+            stickyContent()
+        }
+        BoxWithConstraints(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .zIndex(0f),
+        ) {
+            val viewportHeight = maxHeight
+            var spentBlockPx by remember { mutableIntStateOf(0) }
+            val density = LocalDensity.current
+            val sheetMinHeight =
+                if (spentBlockPx > 0) {
+                    with(density) {
+                        (viewportHeight.toPx() - spentBlockPx)
+                            .toDp()
+                            .coerceAtLeast(0.dp)
+                    }
+                } else {
+                    0.dp
+                }
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = viewportHeight)
+                        .verticalScroll(scrollState),
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .onSizeChanged { spentBlockPx = it.height }
+                            .background(scrollGradient),
+                ) {
+                    spentContent()
+                }
+                sheetContent(
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = sheetMinHeight),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeStickyGreetingBar(
+    state: HomeUiState,
+    onMenuClick: () -> Unit,
+    showOverLimitBadge: Boolean,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(top = 8.dp, bottom = 12.dp),
+    ) {
+        HomeHeaderRow(
+            greetingPrefix = state.greetingPrefix,
+            userName = state.userName,
+            onMenuClick = onMenuClick,
+            showOverLimitBadge = showOverLimitBadge,
+        )
+    }
+}
+
+@Composable
+private fun HomeSpentTodaySection(content: @Composable () -> Unit) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(top = 8.dp, bottom = 32.dp),
+    ) {
+        content()
+    }
+}
+
+@Composable
 private fun HomeHeaderRow(
     greetingPrefix: String,
     userName: String,
     onMenuClick: () -> Unit,
+    showOverLimitBadge: Boolean = false,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = greetingPrefix,
                 color = Color.White.copy(alpha = 0.92f),
@@ -1675,6 +1797,31 @@ private fun HomeHeaderRow(
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
             )
+        }
+        if (showOverLimitBadge) {
+            Row(
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White.copy(alpha = 0.18f))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Warning,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = stringResource(R.string.home_over_limit_badge),
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(Modifier.width(8.dp))
         }
         IconButton(
             onClick = onMenuClick,
@@ -1694,6 +1841,60 @@ private fun HomeHeaderRow(
 }
 
 @Composable
+private fun DailyLimitExceededBanner(overByRupees: Int) {
+    val nf = rememberInrFormatter()
+    val accent = Color(0xFFB45309)
+    val bannerBg = Color(0xFFFFF8E7)
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    color = Color(0xFFFDE68A),
+                    shape = RoundedCornerShape(14.dp),
+                )
+                .clip(RoundedCornerShape(14.dp))
+                .background(bannerBg)
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Warning,
+            contentDescription = null,
+            tint = Color(0xFFF59E0B),
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column {
+            Text(
+                text = stringResource(R.string.home_daily_limit_exceeded_title),
+                color = accent,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text =
+                    stringResource(
+                        R.string.home_daily_limit_exceeded_body,
+                        nf.formatInrPlain(overByRupees),
+                    ),
+                color = accent.copy(alpha = 0.92f),
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+            )
+        }
+    }
+}
+
+private fun HomeUiState.isOverDailyLimit(): Boolean =
+    dailyLimitRupees > 0 && spentTodayRupees > dailyLimitRupees
+
+private fun HomeUiState.overLimitRupees(): Int =
+    (spentTodayRupees - dailyLimitRupees).coerceAtLeast(0)
+
+@Composable
 private fun SpentTodayCard(
     spentRupees: Int,
     dailyLimitRupees: Int,
@@ -1701,8 +1902,22 @@ private fun SpentTodayCard(
     remainingRupees: Int,
     transactionCount: Int,
     savedRupees: Int,
+    isOverDailyLimit: Boolean,
+    overLimitRupees: Int,
 ) {
     val nf = rememberInrFormatter()
+    val progressFraction =
+        if (isOverDailyLimit) {
+            1f
+        } else {
+            (budgetPercent.coerceIn(0, 100) / 100f)
+        }
+    val percentLabel =
+        if (isOverDailyLimit) {
+            stringResource(R.string.home_budget_percent_over, budgetPercent)
+        } else {
+            stringResource(R.string.home_budget_percent, budgetPercent)
+        }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1737,7 +1952,7 @@ private fun SpentTodayCard(
                 fontSize = 13.sp,
             )
             Text(
-                text = "$budgetPercent%",
+                text = percentLabel,
                 color = Color.White.copy(alpha = 0.88f),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -1745,7 +1960,7 @@ private fun SpentTodayCard(
         }
         Spacer(Modifier.height(8.dp))
         LinearProgressIndicator(
-            progress = { budgetPercent.coerceIn(0, 100) / 100f },
+            progress = { progressFraction },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(6.dp)
@@ -1761,21 +1976,39 @@ private fun SpentTodayCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            StatPill(
-                label = stringResource(R.string.home_remaining_label),
-                value = nf.formatInrPlain(remainingRupees),
-                modifier = Modifier.weight(1f),
-            )
-            StatPill(
-                label = stringResource(R.string.home_transactions_label),
-                value = transactionCount.toString(),
-                modifier = Modifier.weight(1f),
-            )
-            StatPill(
-                label = stringResource(R.string.home_saved_label),
-                value = nf.formatInrPlain(savedRupees),
-                modifier = Modifier.weight(1f),
-            )
+            if (isOverDailyLimit) {
+                StatPill(
+                    label = stringResource(R.string.home_over_by_label),
+                    value = nf.formatInrPlain(overLimitRupees),
+                    modifier = Modifier.weight(1f),
+                )
+                StatPill(
+                    label = stringResource(R.string.home_transactions_label),
+                    value = transactionCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                StatPill(
+                    label = stringResource(R.string.home_limit_pill_label),
+                    value = nf.formatInrPlain(dailyLimitRupees),
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                StatPill(
+                    label = stringResource(R.string.home_remaining_label),
+                    value = nf.formatInrPlain(remainingRupees),
+                    modifier = Modifier.weight(1f),
+                )
+                StatPill(
+                    label = stringResource(R.string.home_transactions_label),
+                    value = transactionCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                StatPill(
+                    label = stringResource(R.string.home_saved_label),
+                    value = nf.formatInrPlain(savedRupees),
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }

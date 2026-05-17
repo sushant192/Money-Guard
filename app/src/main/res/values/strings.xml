@@ -80,6 +80,13 @@
     <string name="home_remaining_label">Remaining</string>
     <string name="home_transactions_label">Transactions</string>
     <string name="home_saved_label">Saved</string>
+    <string name="home_over_limit_badge">Over limit</string>
+    <string name="home_over_by_label">Over by</string>
+    <string name="home_limit_pill_label">Limit</string>
+    <string name="home_budget_percent">%1$d%%</string>
+    <string name="home_budget_percent_over">%1$d%% !</string>
+    <string name="home_daily_limit_exceeded_title">Daily limit exceeded!</string>
+    <string name="home_daily_limit_exceeded_body">You\'ve spent %1$s over your limit today.</string>
     <string name="home_today_expenses">Today\'s expenses</string>
     <string name="home_see_all">See all</string>
     <string name="home_profile_content_description">Profile</string>

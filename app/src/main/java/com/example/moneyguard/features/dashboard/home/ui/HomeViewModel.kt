@@ -57,7 +57,7 @@ class HomeViewModel(
                     val limit = state.dailyLimitRupees.coerceAtLeast(1)
                     val remaining = (state.dailyLimitRupees - snapshot.spentTodayRupees).coerceAtLeast(0)
                     val usedPercent =
-                        ((snapshot.spentTodayRupees * 100f) / limit).toInt().coerceIn(0, 100)
+                        ((snapshot.spentTodayRupees * 100f) / limit).toInt().coerceAtLeast(0)
                     val refreshedDetail =
                         state.selectedExpenseDetail?.let { detail ->
                             entities.find { it.id == detail.id }?.toExpenseDetailUi()
@@ -227,11 +227,12 @@ class HomeViewModel(
             val savedLimit = getDailyLimit() ?: return@launch
             _uiState.update { state ->
                 val remaining = (savedLimit - state.spentTodayRupees).coerceAtLeast(0)
-                val usedPercent = if (savedLimit > 0) {
-                    ((state.spentTodayRupees * 100f) / savedLimit).toInt()
-                } else {
-                    0
-                }
+                val usedPercent =
+                    if (savedLimit > 0) {
+                        ((state.spentTodayRupees * 100f) / savedLimit).toInt().coerceAtLeast(0)
+                    } else {
+                        0
+                    }
                 state.copy(
                     dailyLimitRupees = savedLimit,
                     remainingRupees = remaining,
