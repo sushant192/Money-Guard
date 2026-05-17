@@ -25,7 +25,7 @@ class PaymentNotificationParserTest {
             )
         assertNotNull(result)
         assertEquals(499, result!!.amountRupees)
-        assertEquals("UPI to Swiggy", result.title)
+        assertEquals("Swiggy", result.title)
         assertEquals("UPI", result.paymentSource)
         assertEquals(ExpenseIconStyle.Food, result.category)
     }
@@ -80,7 +80,7 @@ class PaymentNotificationParserTest {
             )
         assertNotNull(result)
         assertEquals(89, result!!.amountRupees)
-        assertEquals("UPI to Zomato", result.title)
+        assertEquals("Zomato", result.title)
         assertEquals("UPI", result.paymentSource)
     }
 
@@ -93,7 +93,7 @@ class PaymentNotificationParserTest {
             )
         assertNotNull(result)
         assertEquals(50, result!!.amountRupees)
-        assertEquals("UPI to Aryan", result.title)
+        assertEquals("Aryan", result.title)
         assertEquals("UPI", result.paymentSource)
         assertEquals(ExpenseIconStyle.Transfer, result.category)
     }
@@ -138,7 +138,7 @@ class PaymentNotificationParserTest {
 
         assertNotNull(result)
         assertEquals(29, result!!.amountRupees)
-        assertEquals("UPI to Indian Railways UTS", result.title)
+        assertEquals("Indian Railways UTS", result.title)
         assertEquals("UPI", result.paymentSource)
         assertEquals(ExpenseIconStyle.Travel, result.category)
         assertEquals("611013698812", result.note)

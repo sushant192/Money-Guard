@@ -9,6 +9,7 @@ import com.example.moneyguard.core.notifications.NotificationAccessManager
 import com.example.moneyguard.features.auth.domain.repository.AuthRepository
 import com.example.moneyguard.features.auth.domain.usecase.LogoutUseCase
 import com.example.moneyguard.features.dashboard.home.data.HomeExpenseSnapshot
+import com.example.moneyguard.features.dashboard.home.data.toExpenseDetailUi
 import com.example.moneyguard.features.dashboard.home.domain.repository.ExpenseRepository
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.ClearBudgetSetupUseCase
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.usecase.GetDailyLimitUseCase
@@ -33,6 +34,9 @@ class HomeViewModel(
 ) : BaseComposeViewModel<HomeUiState>(),
     HomeUiEvents {
 
+    private var cachedExpenses: List<com.example.moneyguard.data.local.entity.ExpenseEntity> =
+        emptyList()
+
     private val _uiState = MutableStateFlow(
         HomeUiState.Initial.copy(
             greetingPrefix = greetingPrefixForHour(Calendar.getInstance()),
@@ -47,12 +51,17 @@ class HomeViewModel(
         refreshSavedDailyLimit()
         viewModelScope.launch {
             expenseRepository.observeAllExpenses().collect { entities ->
+                cachedExpenses = entities
                 val snapshot = HomeExpenseSnapshot.from(entities, Calendar.getInstance())
                 _uiState.update { state ->
                     val limit = state.dailyLimitRupees.coerceAtLeast(1)
                     val remaining = (state.dailyLimitRupees - snapshot.spentTodayRupees).coerceAtLeast(0)
                     val usedPercent =
                         ((snapshot.spentTodayRupees * 100f) / limit).toInt().coerceIn(0, 100)
+                    val refreshedDetail =
+                        state.selectedExpenseDetail?.let { detail ->
+                            entities.find { it.id == detail.id }?.toExpenseDetailUi()
+                        }
                     state.copy(
                         todayExpenses = snapshot.todayExpenseItems,
                         historyGroups = snapshot.historyGroups,
@@ -64,6 +73,7 @@ class HomeViewModel(
                         weekDailyBars = snapshot.weekDailyBars,
                         remainingRupees = remaining,
                         budgetUsedPercent = usedPercent,
+                        selectedExpenseDetail = refreshedDetail,
                     )
                 }
             }
@@ -92,7 +102,46 @@ class HomeViewModel(
     }
 
     override fun onDismissAddExpenseSheet() {
-        _uiState.update { it.copy(showAddExpenseSheet = false) }
+        _uiState.update {
+            it.copy(showAddExpenseSheet = false, expenseEditDraft = null)
+        }
+    }
+
+    override fun onExpenseClick(expenseId: Long) {
+        val entity = cachedExpenses.find { it.id == expenseId }
+            ?: return
+        _uiState.update { it.copy(selectedExpenseDetail = entity.toExpenseDetailUi()) }
+    }
+
+    override fun onDismissExpenseDetail() {
+        _uiState.update { it.copy(selectedExpenseDetail = null) }
+    }
+
+    override fun onDeleteExpense(expenseId: Long) {
+        viewModelScope.launch {
+            expenseRepository.deleteExpense(expenseId)
+            _uiState.update { it.copy(selectedExpenseDetail = null) }
+        }
+    }
+
+    override fun onEditExpenseClick(expenseId: Long) {
+        val detail = _uiState.value.selectedExpenseDetail
+            ?: return
+        if (detail.id != expenseId) return
+        _uiState.update {
+            it.copy(
+                selectedExpenseDetail = null,
+                showAddExpenseSheet = true,
+                expenseEditDraft =
+                    ExpenseEditDraft(
+                        expenseId = detail.id,
+                        amountRupees = detail.amountRupees,
+                        title = detail.title,
+                        note = detail.note,
+                        category = detail.iconStyle,
+                    ),
+            )
+        }
     }
 
     override fun onSaveManualExpense(
@@ -104,14 +153,27 @@ class HomeViewModel(
         if (amountRupees <= 0) return
         val trimmedTitle = title.ifBlank { "Expense" }
         val trimmedNote = note.trim()
+        val editDraft = _uiState.value.expenseEditDraft
         viewModelScope.launch {
-            expenseRepository.insertManualExpense(
-                title = trimmedTitle,
-                amountRupees = amountRupees,
-                note = trimmedNote,
-                category = category,
-            )
-            _uiState.update { it.copy(showAddExpenseSheet = false) }
+            if (editDraft != null) {
+                expenseRepository.updateExpense(
+                    id = editDraft.expenseId,
+                    title = trimmedTitle,
+                    amountRupees = amountRupees,
+                    note = trimmedNote,
+                    category = category,
+                )
+            } else {
+                expenseRepository.insertManualExpense(
+                    title = trimmedTitle,
+                    amountRupees = amountRupees,
+                    note = trimmedNote,
+                    category = category,
+                )
+            }
+            _uiState.update {
+                it.copy(showAddExpenseSheet = false, expenseEditDraft = null)
+            }
         }
     }
 
@@ -125,7 +187,7 @@ class HomeViewModel(
 
     override fun onLogoutClick() {
         // Sign out from Firebase first, then bounce back to the auth graph
-        // and tear down the dashboard graph entirely so the user can't swipeaaaaa
+        // and tear down the dashboard graph entirely so the user can't swipe
         // back into a "logged-out" Home. AuthGraph's start destination
         // (GetStarted) becomes the new top.
         viewModelScope.launch {

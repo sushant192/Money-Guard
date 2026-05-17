@@ -55,4 +55,28 @@ class ExpenseRepositoryImpl(
             )
         return rowId != -1L
     }
+
+    override suspend fun updateExpense(
+        id: Long,
+        title: String,
+        amountRupees: Int,
+        note: String,
+        category: ExpenseIconStyle,
+    ) {
+        val existing = dao.getById(id) ?: return
+        dao.update(
+            existing.copy(
+                title = title,
+                amountRupees = amountRupees,
+                note = note,
+                category = category.name,
+            ),
+        )
+    }
+
+    override suspend fun deleteExpense(id: Long) {
+        dao.deleteById(id)
+    }
+
+    override suspend fun getExpenseById(id: Long): ExpenseEntity? = dao.getById(id)
 }

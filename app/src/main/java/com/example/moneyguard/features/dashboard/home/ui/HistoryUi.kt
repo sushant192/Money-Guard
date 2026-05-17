@@ -8,11 +8,13 @@ import androidx.compose.runtime.Immutable
  */
 @Immutable
 data class HistoryItemUi(
+    val id: Long,
     val title: String,
     val time: String,
     /** Displayed with `−` prefix in the UI. */
     val amountRupees: Int,
     val iconStyle: ExpenseIconStyle,
+    val paymentLabel: String,
 )
 
 /** A grouping of [HistoryItemUi] under a date bucket like "Today",

@@ -13,6 +13,7 @@ enum class ExpenseIconStyle {
 
 @Immutable
 data class ExpenseItemUi(
+    val id: Long,
     val title: String,
     /** e.g. "Entertainment · 8:30 AM" */
     val metaLine: String,

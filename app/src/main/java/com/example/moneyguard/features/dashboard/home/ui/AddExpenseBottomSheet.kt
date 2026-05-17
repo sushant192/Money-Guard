@@ -90,11 +90,17 @@ fun AddExpenseBottomSheet(
         note: String,
         category: ExpenseIconStyle,
     ) -> Unit,
+    editDraft: ExpenseEditDraft? = null,
 ) {
-    var amountRaw by remember { mutableStateOf("") }
-    var titleText by remember { mutableStateOf("") }
-    var noteText by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(ExpenseIconStyle.Entertainment) }
+    var amountRaw by remember(editDraft) {
+        mutableStateOf(editDraft?.amountRupees?.toString().orEmpty())
+    }
+    var titleText by remember(editDraft) { mutableStateOf(editDraft?.title.orEmpty()) }
+    var noteText by remember(editDraft) { mutableStateOf(editDraft?.note.orEmpty()) }
+    var selectedCategory by remember(editDraft) {
+        mutableStateOf(editDraft?.category ?: ExpenseIconStyle.Entertainment)
+    }
+    val isEditing = editDraft != null
     var cursorVisible by remember { mutableStateOf(true) }
 
     val scrimInteraction = remember { MutableInteractionSource() }
@@ -166,7 +172,14 @@ fun AddExpenseBottomSheet(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = stringResource(R.string.add_expense_title),
+                            text =
+                                stringResource(
+                                    if (isEditing) {
+                                        R.string.edit_expense_title
+                                    } else {
+                                        R.string.add_expense_title
+                                    },
+                                ),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF111827),
@@ -301,7 +314,14 @@ fun AddExpenseBottomSheet(
                                 elevation = ButtonDefaults.buttonElevation(0.dp),
                             ) {
                                 Text(
-                                    text = stringResource(R.string.add_expense_save),
+                                    text =
+                                        stringResource(
+                                            if (isEditing) {
+                                                R.string.edit_expense_save
+                                            } else {
+                                                R.string.add_expense_save
+                                            },
+                                        ),
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 16.sp,
                                 )

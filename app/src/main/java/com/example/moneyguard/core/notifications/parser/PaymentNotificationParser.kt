@@ -23,7 +23,7 @@ class PaymentNotificationParser {
         if (!isDebitNotification(text, packageName)) return null
 
         val merchant = extractMerchantTitle(text) ?: "Payment"
-        val title = formatDisplayTitle(merchant, text, packageName)
+        val title = formatDisplayTitle(merchant)
         val paymentSource = resolvePaymentLabel(text, packageName)
         val category = inferCategory(text, merchant)
         val note = buildNote(text)
@@ -95,14 +95,9 @@ class PaymentNotificationParser {
         return ref.orEmpty()
     }
 
-    /** e.g. "UPI to Aryan" — matches the expense row title in the app UI. */
-    private fun formatDisplayTitle(merchant: String, text: String, packageName: String): String {
+    private fun formatDisplayTitle(merchant: String): String {
         val name = merchant.cleanMerchantTitle()
-        return when {
-            name.equals("Payment", ignoreCase = true) -> "UPI Payment"
-            shouldUseUpiPresentation(text, name, packageName) -> "UPI to $name"
-            else -> name
-        }
+        return if (name.equals("Payment", ignoreCase = true)) "Payment" else name
     }
 
     private fun resolvePaymentLabel(text: String, packageName: String): String =

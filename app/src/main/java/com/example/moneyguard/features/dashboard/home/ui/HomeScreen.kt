@@ -178,12 +178,23 @@ private fun HomeUiComponents(
                     )
                 }
             }
+            state.selectedExpenseDetail?.let { detail ->
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    ExpenseDetailBottomSheet(
+                        detail = detail,
+                        onDismiss = event::onDismissExpenseDetail,
+                        onDelete = { event.onDeleteExpense(detail.id) },
+                        onEdit = { event.onEditExpenseClick(detail.id) },
+                    )
+                }
+            }
             if (state.showAddExpenseSheet) {
                 // Modal must be LTR: the drawer uses a parent RTL hack; without this,
                 // rows, keypad order, and horizontalScroll all mirror incorrectly.
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                     AddExpenseBottomSheet(
                         onDismiss = event::onDismissAddExpenseSheet,
+                        editDraft = state.expenseEditDraft,
                         onSave = { amount, title, note, category ->
                             event.onSaveManualExpense(amount, title, note, category)
                         },
@@ -273,7 +284,7 @@ private fun DashboardScaffold(
                     event = event,
                     onMenuClick = onMenuClick,
                 )
-                DashboardTab.History -> HistoryTabContent(state = state)
+                DashboardTab.History -> HistoryTabContent(state = state, event = event)
                 DashboardTab.Stats -> StatsTabContent(state = state)
                 DashboardTab.Limits -> LimitsTabContent(state = state, event = event)
             }
@@ -385,7 +396,10 @@ private fun HomeTabContent(
                     }
                     Spacer(Modifier.height(18.dp))
                     state.todayExpenses.forEach { expense ->
-                        ExpenseRow(item = expense)
+                        ExpenseRow(
+                            item = expense,
+                            onClick = { event.onExpenseClick(expense.id) },
+                        )
                         Spacer(Modifier.height(12.dp))
                     }
                 }
@@ -854,7 +868,10 @@ private fun NoExpensesIllustration() {
 }
 
 @Composable
-private fun HistoryTabContent(state: HomeUiState) {
+private fun HistoryTabContent(
+    state: HomeUiState,
+    event: HomeUiEvents,
+) {
     val scroll = rememberScrollState()
     Box(
         modifier = Modifier
@@ -914,7 +931,10 @@ private fun HistoryTabContent(state: HomeUiState) {
                         )
                         Spacer(Modifier.height(12.dp))
                         group.items.forEach { item ->
-                            HistoryRow(item = item)
+                            HistoryRow(
+                                item = item,
+                                onClick = { event.onExpenseClick(item.id) },
+                            )
                             Spacer(Modifier.height(12.dp))
                         }
                     }
@@ -925,20 +945,21 @@ private fun HistoryTabContent(state: HomeUiState) {
 }
 
 @Composable
-private fun HistoryRow(item: HistoryItemUi) {
+private fun HistoryRow(
+    item: HistoryItemUi,
+    onClick: () -> Unit,
+) {
     val nf = rememberInrFormatter()
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(FieldBackground)
+            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ExpenseIconBadge(
-            style = item.iconStyle,
-            useUpiPaymentIcon = item.title.startsWith("UPI to ", ignoreCase = true),
-        )
+        ExpenseIconBadge(style = item.iconStyle)
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -1784,20 +1805,21 @@ private fun StatPill(
 }
 
 @Composable
-private fun ExpenseRow(item: ExpenseItemUi) {
+private fun ExpenseRow(
+    item: ExpenseItemUi,
+    onClick: () -> Unit,
+) {
     val nf = rememberInrFormatter()
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(FieldBackground)
+            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ExpenseIconBadge(
-            style = item.iconStyle,
-            useUpiPaymentIcon = item.paymentLabel.equals("UPI", ignoreCase = true),
-        )
+        ExpenseIconBadge(style = item.iconStyle)
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -1865,6 +1887,10 @@ private fun HomePreview() {
                 override fun onSeeAllExpensesClick() = Unit
                 override fun onFabClick() = Unit
                 override fun onDismissAddExpenseSheet() = Unit
+                override fun onExpenseClick(expenseId: Long) = Unit
+                override fun onDismissExpenseDetail() = Unit
+                override fun onDeleteExpense(expenseId: Long) = Unit
+                override fun onEditExpenseClick(expenseId: Long) = Unit
                 override fun onSaveManualExpense(
                     amountRupees: Int,
                     title: String,

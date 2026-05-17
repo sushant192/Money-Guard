@@ -101,6 +101,17 @@
     <string name="add_expense_field_note_label">Note (optional)</string>
     <string name="add_expense_field_note_placeholder">Add a note…</string>
     <string name="add_expense_save">Save expense</string>
+    <string name="edit_expense_title">Edit expense</string>
+    <string name="edit_expense_save">Save changes</string>
+
+    <string name="expense_detail_date">Date</string>
+    <string name="expense_detail_time">Time</string>
+    <string name="expense_detail_category">Category</string>
+    <string name="expense_detail_method">Method</string>
+    <string name="expense_detail_note">Note</string>
+    <string name="expense_detail_note_empty">—</string>
+    <string name="expense_detail_delete">Delete</string>
+    <string name="expense_detail_edit">Edit</string>
     <string name="add_expense_keypad_back_cd">Backspace</string>
 
     <string name="notification_listener_service_label">MoneyGuard notification listener</string>

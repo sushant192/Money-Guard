@@ -12,6 +12,14 @@ interface HomeUiEvents {
 
     fun onDismissAddExpenseSheet()
 
+    fun onExpenseClick(expenseId: Long)
+
+    fun onDismissExpenseDetail()
+
+    fun onDeleteExpense(expenseId: Long)
+
+    fun onEditExpenseClick(expenseId: Long)
+
     fun onSaveManualExpense(
         amountRupees: Int,
         title: String,

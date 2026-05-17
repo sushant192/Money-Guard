@@ -18,23 +18,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** Leading icon on Home / History expense rows. */
+/** Leading icon on Home / History expense rows and the detail sheet header. */
 @Composable
 fun ExpenseIconBadge(
     style: ExpenseIconStyle,
     useUpiPaymentIcon: Boolean = false,
+    tileSize: Dp = 44.dp,
 ) {
-    if (useUpiPaymentIcon || style == ExpenseIconStyle.Transfer) {
-        UpiPaymentIconBadge()
+    if (useUpiPaymentIcon) {
+        UpiPaymentIconBadge(tileSize = tileSize)
         return
     }
+
+    val iconSize = tileSize * 0.5f
+    val corner = tileSize * 0.27f
 
     val bg: Color
     val tint: Color
     val icon: ImageVector
     when (style) {
+        ExpenseIconStyle.Transfer -> {
+            UpiPaymentIconBadge(tileSize = tileSize)
+            return
+        }
         ExpenseIconStyle.Entertainment -> {
             bg = Color(0xFFE9DEFD)
             tint = Color(0xFF7C4DFF)
@@ -55,12 +64,11 @@ fun ExpenseIconBadge(
             tint = Color(0xFFE91E63)
             icon = Icons.Outlined.LocationOn
         }
-        ExpenseIconStyle.Transfer -> error("handled above")
     }
     Box(
         modifier = Modifier
-            .size(44.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .size(tileSize)
+            .clip(RoundedCornerShape(corner))
             .background(bg),
         contentAlignment = Alignment.Center,
     ) {
@@ -68,24 +76,30 @@ fun ExpenseIconBadge(
             imageVector = icon,
             contentDescription = null,
             tint = tint,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(iconSize),
         )
     }
 }
 
 /** Mint tile + green circle + white arrow — UPI / transfer payments. */
 @Composable
-fun UpiPaymentIconBadge(modifier: Modifier = Modifier) {
+fun UpiPaymentIconBadge(
+    modifier: Modifier = Modifier,
+    tileSize: Dp = 44.dp,
+) {
+    val innerCircle = tileSize * 0.64f
+    val arrowSize = tileSize * 0.36f
+    val corner = tileSize * 0.27f
     Box(
         modifier = modifier
-            .size(44.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .size(tileSize)
+            .clip(RoundedCornerShape(corner))
             .background(Color(0xFFD8F1DD)),
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
-                .size(28.dp)
+                .size(innerCircle)
                 .clip(CircleShape)
                 .background(Color(0xFF2E7D32)),
             contentAlignment = Alignment.Center,
@@ -94,7 +108,7 @@ fun UpiPaymentIconBadge(modifier: Modifier = Modifier) {
                 imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(arrowSize),
             )
         }
     }

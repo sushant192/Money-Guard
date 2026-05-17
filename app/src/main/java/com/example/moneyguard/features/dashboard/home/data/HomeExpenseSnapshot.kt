@@ -6,6 +6,7 @@ import com.example.moneyguard.data.local.entity.ExpenseEntity
 import com.example.moneyguard.features.dashboard.home.ui.BarKind
 import com.example.moneyguard.features.dashboard.home.ui.CategorySpendUi
 import com.example.moneyguard.features.dashboard.home.ui.DayBarUi
+import com.example.moneyguard.features.dashboard.home.ui.ExpenseDetailUi
 import com.example.moneyguard.features.dashboard.home.ui.ExpenseIconStyle
 import com.example.moneyguard.features.dashboard.home.ui.ExpenseItemUi
 import com.example.moneyguard.features.dashboard.home.ui.HistoryGroup
@@ -159,6 +160,84 @@ private fun List<ExpenseEntity>.toCategoryBreakdown(): List<CategorySpendUi> {
         .sortedByDescending { it.amountRupees }
 }
 
+internal fun ExpenseEntity.toExpenseDetailUi(): ExpenseDetailUi {
+    val mapped = toExpenseRowFields()
+    val dateFormat = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
+    val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+    val date = Date(createdAtEpochMs)
+    return ExpenseDetailUi(
+        id = id,
+        title = mapped.title,
+        metaLine = mapped.metaLine,
+        amountRupees = amountRupees,
+        paymentLabel = mapped.paymentLabel,
+        iconStyle = mapped.iconStyle,
+        categoryLabel = categoryMetaLabel(mapped.iconStyle),
+        categoryAccent = categoryAccentColor(mapped.iconStyle),
+        dateLabel = dateFormat.format(date),
+        timeLabel = timeFormat.format(date),
+        note = displayNoteForDetail(note, isFromNotification = sourceKey != null),
+        useUpiPaymentIcon = mapped.useUpiPaymentIcon,
+    )
+}
+
+private data class ExpenseRowFields(
+    val title: String,
+    val metaLine: String,
+    val paymentLabel: String,
+    val iconStyle: ExpenseIconStyle,
+    val useUpiPaymentIcon: Boolean,
+)
+
+private fun ExpenseEntity.toExpenseRowFields(): ExpenseRowFields {
+    val style = category.toExpenseIconStyle()
+    val timeStr = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(createdAtEpochMs))
+    val isFromNotification = sourceKey != null
+
+    val displayTitle = title.withoutUpiToPrefix()
+
+    val paymentLabel =
+        when {
+            paymentSource.equals("Manual", ignoreCase = true) -> paymentSource
+            isFromNotification -> "UPI"
+            paymentSource.equals("UPI", ignoreCase = true) -> "UPI"
+            paymentSource.equals("Card", ignoreCase = true) -> "Card"
+            else -> "UPI"
+        }
+
+    return ExpenseRowFields(
+        title = displayTitle,
+        metaLine = "${categoryMetaLabel(style)} · $timeStr",
+        paymentLabel = paymentLabel,
+        iconStyle = style,
+        // Green UPI arrow only for Transfer; other categories use their own icon.
+        useUpiPaymentIcon = style == ExpenseIconStyle.Transfer,
+    )
+}
+
+private fun String.withoutUpiToPrefix(): String {
+    val prefix = "UPI to "
+    if (!startsWith(prefix, ignoreCase = true)) return this
+    return substring(prefix.length).trim().ifBlank { this }
+}
+
+private fun displayNoteForDetail(raw: String, isFromNotification: Boolean): String {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) return ""
+    if (!isFromNotification) return trimmed
+    if (trimmed.contains("dear customer", ignoreCase = true)) return ""
+    if (trimmed.length > 80) return ""
+    return trimmed
+}
+
+private fun categoryAccentColor(style: ExpenseIconStyle): Color = when (style) {
+    ExpenseIconStyle.Entertainment -> Color(0xFF7C4DFF)
+    ExpenseIconStyle.Food -> Color(0xFF7C4DFF)
+    ExpenseIconStyle.Transfer -> Color(0xFF2E7D32)
+    ExpenseIconStyle.Travel -> Color(0xFF8E24AA)
+    ExpenseIconStyle.Bills -> Color(0xFF2563EB)
+}
+
 private fun categorySpendMeta(style: ExpenseIconStyle): Pair<Int, Color> = when (style) {
     ExpenseIconStyle.Food -> R.string.category_food to Color(0xFF2563EB)
     ExpenseIconStyle.Entertainment -> R.string.category_entertainment to Color(0xFF7C4DFF)
@@ -179,44 +258,27 @@ private fun categoryMetaLabel(category: ExpenseIconStyle): String = when (catego
 }
 
 private fun ExpenseEntity.toExpenseItemUi(): ExpenseItemUi {
-    val style = category.toExpenseIconStyle()
-    val timeStr = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(createdAtEpochMs))
-    val isFromNotification = sourceKey != null
-
-    val displayTitle =
-        when {
-            isFromNotification && !title.startsWith("UPI to ", ignoreCase = true) ->
-                "UPI to ${title.removePrefix("Payment").trim().ifBlank { title }}"
-            else -> title
-        }
-
-    val metaLine = "${categoryMetaLabel(style)} · $timeStr"
-
-    val paymentLabel =
-        when {
-            paymentSource.equals("Manual", ignoreCase = true) -> paymentSource
-            isFromNotification -> "UPI"
-            paymentSource.equals("UPI", ignoreCase = true) -> "UPI"
-            paymentSource.equals("Card", ignoreCase = true) -> "Card"
-            else -> "UPI"
-        }
-
+    val mapped = toExpenseRowFields()
     return ExpenseItemUi(
-        title = displayTitle,
-        metaLine = metaLine,
+        id = id,
+        title = mapped.title,
+        metaLine = mapped.metaLine,
         amountRupees = amountRupees,
-        paymentLabel = paymentLabel,
-        iconStyle = style,
+        paymentLabel = mapped.paymentLabel,
+        iconStyle = mapped.iconStyle,
     )
 }
 
 private fun ExpenseEntity.toHistoryItemUi(): HistoryItemUi {
+    val mapped = toExpenseRowFields()
     val timeStr = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(createdAtEpochMs))
     return HistoryItemUi(
-        title = title,
+        id = id,
+        title = mapped.title,
         time = timeStr,
         amountRupees = amountRupees,
-        iconStyle = category.toExpenseIconStyle(),
+        iconStyle = mapped.iconStyle,
+        paymentLabel = mapped.paymentLabel,
     )
 }
 

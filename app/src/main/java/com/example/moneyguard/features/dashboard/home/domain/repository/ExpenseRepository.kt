@@ -27,4 +27,16 @@ interface ExpenseRepository {
         paymentSource: String,
         createdAtEpochMs: Long,
     ): Boolean
+
+    suspend fun updateExpense(
+        id: Long,
+        title: String,
+        amountRupees: Int,
+        note: String,
+        category: ExpenseIconStyle,
+    )
+
+    suspend fun deleteExpense(id: Long)
+
+    suspend fun getExpenseById(id: Long): ExpenseEntity?
 }

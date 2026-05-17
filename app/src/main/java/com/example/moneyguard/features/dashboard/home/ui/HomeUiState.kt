@@ -33,6 +33,8 @@ data class HomeUiState(
     val hasNotificationAccess: Boolean,
     val isLoading: Boolean,
     val showAddExpenseSheet: Boolean,
+    val selectedExpenseDetail: ExpenseDetailUi? = null,
+    val expenseEditDraft: ExpenseEditDraft? = null,
 ) : UiState {
     companion object {
         val Initial = HomeUiState(
