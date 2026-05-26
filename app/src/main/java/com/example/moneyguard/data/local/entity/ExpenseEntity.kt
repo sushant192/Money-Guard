@@ -9,6 +9,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["createdAtEpochMs"]),
         Index(value = ["sourceKey"], unique = true),
+        Index(value = ["listenerNotificationKey"], unique = true),
     ],
 )
 data class ExpenseEntity(
@@ -20,6 +21,8 @@ data class ExpenseEntity(
     val category: String,
     val paymentSource: String,
     val createdAtEpochMs: Long,
-    /** Stable notification key — null for manual entries. */
+    /** Semantic dedupe key — null for manual entries. */
     val sourceKey: String? = null,
+    /** [android.service.notification.StatusBarNotification.getKey] — blocks repeat callbacks for one shade entry. */
+    val listenerNotificationKey: String? = null,
 )

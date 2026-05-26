@@ -26,7 +26,8 @@ class PaymentNotificationParser {
         val title = formatDisplayTitle(merchant)
         val paymentSource = resolvePaymentLabel(text, packageName)
         val category = inferCategory(text, merchant)
-        val note = buildNote(text)
+        val transactionRef = extractTransactionRef(text)
+        val note = transactionRef.orEmpty()
 
         return ParsedPaymentNotification(
             amountRupees = amountRupees,
@@ -34,6 +35,7 @@ class PaymentNotificationParser {
             note = note,
             category = category,
             paymentSource = paymentSource,
+            transactionRef = transactionRef,
         )
     }
 
@@ -90,10 +92,8 @@ class PaymentNotificationParser {
         return null
     }
 
-    private fun buildNote(text: String): String {
-        val ref = TRANSACTION_REF_PATTERN.find(text)?.groupValues?.get(1)?.trim()
-        return ref.orEmpty()
-    }
+    private fun extractTransactionRef(text: String): String? =
+        TRANSACTION_REF_PATTERN.find(text)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }
 
     private fun formatDisplayTitle(merchant: String): String {
         val name = merchant.cleanMerchantTitle()

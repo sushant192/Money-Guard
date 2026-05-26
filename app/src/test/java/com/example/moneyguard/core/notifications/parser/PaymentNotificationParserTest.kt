@@ -142,6 +142,7 @@ class PaymentNotificationParserTest {
         assertEquals("UPI", result.paymentSource)
         assertEquals(ExpenseIconStyle.Travel, result.category)
         assertEquals("611013698812", result.note)
+        assertEquals("611013698812", result.transactionRef)
     }
 
     companion object {

@@ -11,4 +11,6 @@ data class ParsedPaymentNotification(
     val note: String,
     val category: ExpenseIconStyle,
     val paymentSource: String,
+    /** UPI / bank reference when present — used to dedupe repeat notifications. */
+    val transactionRef: String? = null,
 )

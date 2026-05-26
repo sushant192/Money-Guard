@@ -8,6 +8,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
 
@@ -15,6 +17,9 @@ import org.koin.core.annotation.Single
  * Runs on a background coroutine when the system posts a notification. Parses
  * debit alerts and persists them — works while the app process is alive or
  * after a cold start triggered by [MoneyGuardNotificationListenerService].
+ *
+ * A single visible alert (e.g. one bank email on the shade) can still invoke
+ * [onNotificationPosted] more than once when Android updates or groups it.
  */
 @Single
 class NotificationExpenseProcessor(
@@ -24,10 +29,17 @@ class NotificationExpenseProcessor(
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
+    private val processMutex = Mutex()
 
     fun onNotificationPosted(sbn: StatusBarNotification) {
+        if (!NotificationPostedFilter.shouldProcess(sbn)) {
+            Log.d(TAG, "Ignored notification post (${sbn.packageName}, key=${sbn.key})")
+            return
+        }
         scope.launch {
-            process(sbn)
+            processMutex.withLock {
+                process(sbn)
+            }
         }
     }
 
@@ -40,9 +52,17 @@ class NotificationExpenseProcessor(
 
         val parsed = parser.parse(packageName, combinedText) ?: return
 
+        val sourceKey =
+            NotificationDedupeKey.build(
+                packageName = packageName,
+                parsed = parsed,
+                postTimeEpochMs = sbn.postTime,
+            )
+
         val inserted =
             expenseRepository.insertNotificationExpense(
-                sourceKey = sbn.key,
+                sourceKey = sourceKey,
+                listenerNotificationKey = sbn.key,
                 title = parsed.title,
                 amountRupees = parsed.amountRupees,
                 note = parsed.note,
@@ -54,7 +74,12 @@ class NotificationExpenseProcessor(
         if (inserted) {
             Log.i(
                 TAG,
-                "Logged debit ₹${parsed.amountRupees} · ${parsed.title} ($packageName)",
+                "Logged debit ₹${parsed.amountRupees} · ${parsed.title} ($packageName, key=${sbn.key})",
+            )
+        } else {
+            Log.d(
+                TAG,
+                "Skipped duplicate debit ₹${parsed.amountRupees} · ${parsed.title} ($packageName, key=${sbn.key})",
             )
         }
     }

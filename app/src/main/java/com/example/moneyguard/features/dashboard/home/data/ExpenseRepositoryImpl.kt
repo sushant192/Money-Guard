@@ -34,6 +34,7 @@ class ExpenseRepositoryImpl(
 
     override suspend fun insertNotificationExpense(
         sourceKey: String,
+        listenerNotificationKey: String,
         title: String,
         amountRupees: Int,
         note: String,
@@ -42,16 +43,19 @@ class ExpenseRepositoryImpl(
         createdAtEpochMs: Long,
     ): Boolean {
         val rowId =
-            dao.insert(
-                ExpenseEntity(
-                    title = title,
-                    amountRupees = amountRupees,
-                    note = note,
-                    category = category.name,
-                    paymentSource = paymentSource,
-                    createdAtEpochMs = createdAtEpochMs,
-                    sourceKey = sourceKey,
-                ),
+            dao.insertNotificationExpenseIfNew(
+                expense =
+                    ExpenseEntity(
+                        title = title,
+                        amountRupees = amountRupees,
+                        note = note,
+                        category = category.name,
+                        paymentSource = paymentSource,
+                        createdAtEpochMs = createdAtEpochMs,
+                        sourceKey = sourceKey,
+                        listenerNotificationKey = listenerNotificationKey,
+                    ),
+                nearTimeWindowMs = NOTIFICATION_NEAR_TIME_WINDOW_MS,
             )
         return rowId != -1L
     }
@@ -79,4 +83,9 @@ class ExpenseRepositoryImpl(
     }
 
     override suspend fun getExpenseById(id: Long): ExpenseEntity? = dao.getById(id)
+
+    companion object {
+        /** Catches repeat bank/UPI shade posts for one payment with different notification keys. */
+        private const val NOTIFICATION_NEAR_TIME_WINDOW_MS = 120_000L
+    }
 }
