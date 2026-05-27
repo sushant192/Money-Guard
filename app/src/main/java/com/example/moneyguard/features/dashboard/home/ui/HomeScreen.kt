@@ -1,5 +1,6 @@
 package com.example.moneyguard.features.dashboard.home.ui
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -35,12 +35,8 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.PriorityHigh
-import androidx.compose.material.icons.outlined.Remove
-import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Warning
@@ -72,7 +68,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -88,6 +83,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.example.moneyguard.R
 import com.example.moneyguard.core.arch.BaseScreen
 import com.example.moneyguard.ui.theme.BrandBlue
@@ -169,7 +165,10 @@ private fun HomeUiComponents(
                                     closeDrawer()
                                 },
                                 onEditProfile = closeDrawer,
-                                onNotifications = closeDrawer,
+                                onNotifications = {
+                                    closeDrawer()
+                                    event.onNotificationsClick()
+                                },
                                 onExportData = closeDrawer,
                                 onLogout = {
                                     // Close first so the drawer animation isn't fighting
@@ -2137,6 +2136,7 @@ private fun HomePreview() {
 
                 override fun onAlertThresholdSelect(threshold: AlertThreshold) = Unit
                 override fun onGrantNotificationAccessClick(activityContext: android.content.Context) = Unit
+                override fun onNotificationsClick() = Unit
                 override fun onLogoutClick() = Unit
             },
         )

@@ -25,6 +25,8 @@ import com.example.moneyguard.features.auth.splash.ui.SplashScreen
 import com.example.moneyguard.features.auth.splash.ui.SplashViewModel
 import com.example.moneyguard.features.dashboard.home.ui.HomeScreen
 import com.example.moneyguard.features.dashboard.home.ui.HomeViewModel
+import com.example.moneyguard.features.dashboard.notificationsettings.ui.NotificationsSettingsScreen
+import com.example.moneyguard.features.dashboard.notificationsettings.ui.NotificationsSettingsViewModel
 import com.example.moneyguard.features.dashboard.setlimitandcategory.ui.SetYourLimitAndCategoryScreen
 import com.example.moneyguard.features.dashboard.setlimitandcategory.ui.SetYourLimitAndCategoryViewModel
 import com.example.moneyguard.ui.theme.MoneyGuardTheme
@@ -114,6 +116,10 @@ private fun NavGraphBuilder.dashboardGraph() {
 
         composable<Destination.Home> {
             HomeScreen(viewModel = koinViewModel<HomeViewModel>())
+        }
+
+        composable<Destination.NotificationsSettings> {
+            NotificationsSettingsScreen(viewModel = koinViewModel<NotificationsSettingsViewModel>())
         }
     }
 }

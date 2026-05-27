@@ -17,7 +17,8 @@ class PaymentNotificationParser {
         val text = combinedText.trim()
         if (text.length < 8) return null
         if (isNoiseNotification(text)) return null
-        if (isCreditNotification(text)) return null
+        if (isPromotionalNotification(text)) return null
+        if (isCreditNotification(text, packageName)) return null
 
         val amountRupees = extractAmountRupees(text) ?: return null
         if (!isDebitNotification(text, packageName)) return null
@@ -44,18 +45,30 @@ class PaymentNotificationParser {
         return SKIP_KEYWORDS.any { lower.contains(it) }
     }
 
-    private fun isCreditNotification(text: String): Boolean {
+    /**
+     * Marketing, retail promos, and reward-credit alerts — not real account movements.
+     * Catches Gmail/Google Store style copy that mentions amounts and words like "purchase".
+     */
+    private fun isPromotionalNotification(text: String): Boolean {
+        val lower = text.lowercase()
+        if (PROMO_KEYWORDS.any { lower.contains(it) }) return true
+        return PROMO_PATTERNS.any { it.containsMatchIn(lower) }
+    }
+
+    private fun isCreditNotification(text: String, packageName: String): Boolean {
         val lower = text.lowercase()
         // "Credit card" spend alerts are debits, not incoming credits.
-        if (lower.contains("credit card") && isDebitNotification(text, packageName = "")) {
+        if (lower.contains("credit card") && isDebitNotification(text, packageName)) {
             return false
         }
+        // Promotional / loyalty credits are not bank deposits.
+        if (PROMOTIONAL_CREDIT_PHRASES.any { lower.contains(it) }) return true
         return CREDIT_PATTERNS.any { it.containsMatchIn(lower) }
     }
 
     private fun isDebitNotification(text: String, packageName: String): Boolean {
         val lower = text.lowercase()
-        if (DEBIT_PATTERNS.any { it.containsMatchIn(lower) }) return true
+        if (STRONG_DEBIT_PATTERNS.any { it.containsMatchIn(lower) }) return true
 
         // GPay / some wallets: "You spent ₹…" without the word "debited".
         if (SPEND_PATTERNS.any { it.containsMatchIn(lower) } && extractAmountRupees(text) != null) {
@@ -67,6 +80,7 @@ class PaymentNotificationParser {
             return OUTWARD_TXN_HINTS.any { lower.contains(it) }
         }
 
+        // Gmail, shopping, news, etc. — ignore weak cues like "purchase" in promos.
         return false
     }
 
@@ -193,17 +207,92 @@ class PaymentNotificationParser {
                 Regex("""\bcredit\s+alert\b"""),
             )
 
-        private val DEBIT_PATTERNS =
+        /** Confirmed money-out alerts — safe for banks, wallets, and email-forwarded SMS. */
+        private val STRONG_DEBIT_PATTERNS =
             listOf(
                 Regex("""\bdebited\b"""),
                 Regex("""\bdebit\s+alert\b"""),
                 Regex("""\bdebit\s+of\b"""),
                 Regex("""\bhas\s+been\s+debited\b"""),
                 Regex("""\bwithdrawn\b"""),
-                Regex("""\bpurchase\b"""),
-                Regex("""\bcharged\b"""),
                 Regex("""\bpayment\s+made\b"""),
                 Regex("""\bupi\s+txn\b.*\bdebited\b"""),
+                Regex("""(?i)\bcredit\s+card\s+was\s+charged\b"""),
+                Regex("""(?i)\bwas\s+charged\s+(?:rs|inr|₹)"""),
+                Regex("""(?i)\bcharged\s+(?:rs\.?|inr|₹)\s*[\d,]"""),
+                Regex("""(?i)\bpaid\s+(?:rs\.?|inr|₹)\s*[\d,]"""),
+                Regex("""(?i)\byou\s+sent\s+(?:₹|inr|rs)"""),
+            )
+
+        private val PROMOTIONAL_CREDIT_PHRASES =
+            listOf(
+                "store credit",
+                "shopping credit",
+                "bonus credit",
+                "loyalty credit",
+                "reward credit",
+                "wallet credit when you",
+            )
+
+        private val PROMO_KEYWORDS =
+            listOf(
+                "get an extra",
+                "get up to",
+                "get upto",
+                "limited time offer",
+                "limited-time offer",
+                "exclusive offer",
+                "special offer",
+                "when you buy",
+                "when you purchase",
+                "shop now",
+                "order now",
+                "pre-order",
+                "preorder",
+                "free shipping",
+                "trade-in",
+                "trade in",
+                "upgrade to",
+                "eligible for",
+                "claim your",
+                "deal of the day",
+                "flash sale",
+                "promo code",
+                "coupon code",
+                "use code",
+                "% off",
+                "percent off",
+                "discount on",
+                "unsubscribe",
+                "promotional",
+                "no purchase necessary",
+                "terms and conditions",
+                "t&c apply",
+                "learn more about",
+                "introducing the",
+                "new launch",
+                "launch offer",
+                "launch day",
+                "register now",
+                "sign up to get",
+                "refer a friend",
+                "invite friends",
+                "earn up to",
+                "stand a chance",
+                "you could win",
+                "google store",
+                "pixel 10",
+                "cashback when you",
+                "save up to",
+                "save upto",
+            )
+
+        private val PROMO_PATTERNS =
+            listOf(
+                Regex("""(?i)\bget\s+(?:an\s+)?extra\s+[\d,₹rs.]"""),
+                Regex("""(?i)\b(?:save|earn)\s+(?:up\s+to|upto)\s+[\d,₹rs.]"""),
+                Regex("""(?i)\bbuy\s+(?:a|the)\s+\w+.*\b(?:and|to)\s+(?:get|save|earn)\b"""),
+                Regex("""(?i)\b(?:offer|sale)\s+(?:ends|valid)\s+"""),
             )
 
         private val SPEND_PATTERNS =
@@ -254,6 +343,10 @@ class PaymentNotificationParser {
                 "won ",
                 "congratulations",
                 "cashback offer",
+                "marketing",
+                "newsletter",
+                "sale starts",
+                "sale ends",
             )
 
         private val FOOD_KEYWORDS =

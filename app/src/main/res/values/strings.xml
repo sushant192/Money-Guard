@@ -180,4 +180,32 @@
     <string name="limits_threshold_80" formatted="false">80%</string>
     <string name="limits_threshold_90" formatted="false">90%</string>
     <string name="limits_threshold_custom">Custom</string>
+
+    <!-- Notifications settings (drawer) -->
+    <string name="notifications_settings_title">Notifications</string>
+    <string name="notifications_settings_back">Back</string>
+    <string name="notifications_section_spending">SPENDING ALERTS</string>
+    <string name="notifications_section_transactions">TRANSACTIONS</string>
+    <string name="notifications_section_sound">SOUND &amp; SCHEDULE</string>
+    <string name="notifications_limit_warning_title">Limit warning</string>
+    <string name="notifications_limit_warning_subtitle">Alert at 70% of daily limit</string>
+    <string name="notifications_limit_exceeded_title">Limit exceeded</string>
+    <string name="notifications_limit_exceeded_subtitle">Alert when you go over budget</string>
+    <string name="notifications_daily_summary_title">Daily summary</string>
+    <string name="notifications_daily_summary_subtitle">End-of-day spend recap</string>
+    <string name="notifications_new_expense_title">New expense detected</string>
+    <string name="notifications_new_expense_subtitle">When a payment is auto-captured</string>
+    <string name="notifications_large_txn_title">Large transaction</string>
+    <string name="notifications_large_txn_subtitle">Alert for spends above ₹500</string>
+    <string name="notifications_sound_default">Default</string>
+    <string name="notifications_sound_subtle">Subtle</string>
+    <string name="notifications_sound_none">None</string>
+    <string name="notifications_quiet_hours_title">Quiet hours</string>
+    <string name="notifications_quiet_hours_subtitle">Mute notifications during this window</string>
+    <string name="notifications_time_from">From</string>
+    <string name="notifications_time_to">To</string>
+    <string name="notifications_pick_start_time">Pick start time</string>
+    <string name="notifications_pick_end_time">Pick end time</string>
+    <string name="notifications_time_ok">OK</string>
+    <string name="notifications_time_cancel">Cancel</string>
 </resources>

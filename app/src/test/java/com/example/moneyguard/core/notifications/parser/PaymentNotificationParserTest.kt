@@ -125,6 +125,47 @@ class PaymentNotificationParserTest {
     }
 
     @Test
+    fun gmailPixelStoreCreditPromo_isRejected() {
+        val result =
+            parser.parse(
+                Gmail,
+                "Get an extra 3000 store credit when you buy a Pixel 10a. Shop now at Google Store.",
+            )
+        assertNull(result)
+    }
+
+    @Test
+    fun gmailPixelPromo_withRsAndPurchaseWord_isRejected() {
+        val result =
+            parser.parse(
+                Gmail,
+                "Get an extra Rs 3,000 store credit when you Purchase a Pixel 10a. Limited time offer.",
+            )
+        assertNull(result)
+    }
+
+    @Test
+    fun shoppingAppPurchasePromo_isRejected() {
+        val result =
+            parser.parse(
+                AmazonShopping,
+                "Purchase a Pixel 10a and save up to Rs 3,000. Exclusive offer ends soon.",
+            )
+        assertNull(result)
+    }
+
+    @Test
+    fun bankDebitForwardedViaGmail_isParsed() {
+        val result =
+            parser.parse(
+                Gmail,
+                "Rs.499.00 debited from HDFC Bank XX1234 on 16-May-26 towards Swiggy",
+            )
+        assertNotNull(result)
+        assertEquals(499, result!!.amountRupees)
+    }
+
+    @Test
     fun hdfcUpiDebit_extractsRailwaysMerchantAndTravelCategory() {
         val body =
             """
@@ -150,5 +191,7 @@ class PaymentNotificationParserTest {
         private const val PhonePe = "com.phonepe.app"
         private const val Paytm = "net.one97.paytm"
         private const val Hdfc = "com.snapwork.hdfc"
+        private const val Gmail = "com.google.android.gm"
+        private const val AmazonShopping = "com.amazon.mShop.android.shopping"
     }
 }

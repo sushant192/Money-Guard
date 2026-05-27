@@ -31,5 +31,7 @@ interface HomeUiEvents {
 
     fun onGrantNotificationAccessClick(activityContext: Context)
 
+    fun onNotificationsClick()
+
     fun onLogoutClick()
 }

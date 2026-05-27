@@ -60,4 +60,8 @@ sealed interface Destination {
 
     @Serializable
     data object Home : Destination
+
+    /** In-app alert preferences (spending alerts, transaction alerts, quiet hours). */
+    @Serializable
+    data object NotificationsSettings : Destination
 }

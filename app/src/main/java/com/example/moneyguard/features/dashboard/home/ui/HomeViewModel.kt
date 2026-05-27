@@ -186,6 +186,12 @@ class HomeViewModel(
         notificationAccessManager.openNotificationAccessSettings(activityContext)
     }
 
+    override fun onNotificationsClick() {
+        viewModelScope.launch {
+            navigator.navigate(Destination.NotificationsSettings)
+        }
+    }
+
     override fun onLogoutClick() {
         // Sign out from Firebase first, then bounce back to the auth graph
         // and tear down the dashboard graph entirely so the user can't swipe

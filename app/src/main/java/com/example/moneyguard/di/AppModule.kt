@@ -12,6 +12,8 @@ import com.example.moneyguard.features.auth.data.GoogleSignInHelper
 import com.example.moneyguard.features.auth.domain.repository.AuthRepository
 import com.example.moneyguard.features.dashboard.home.data.ExpenseRepositoryImpl
 import com.example.moneyguard.features.dashboard.home.domain.repository.ExpenseRepository
+import com.example.moneyguard.features.dashboard.notificationsettings.data.NotificationSettingsRepositoryImpl
+import com.example.moneyguard.features.dashboard.notificationsettings.domain.repository.NotificationSettingsRepository
 import com.example.moneyguard.features.dashboard.setlimitandcategory.data.BudgetSetupRepositoryImpl
 import com.example.moneyguard.features.dashboard.setlimitandcategory.domain.repository.BudgetSetupRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -50,6 +52,7 @@ val appModule = module {
     single<AuthRepository> { AuthRepositoryImpl(get()) }
 
     single<BudgetSetupRepository> { BudgetSetupRepositoryImpl(get()) }
+    single<NotificationSettingsRepository> { NotificationSettingsRepositoryImpl(get()) }
 
     single {
         Room.databaseBuilder(
