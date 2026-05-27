@@ -16,6 +16,9 @@ data class NotificationsSettingsUiState(
     val quietHoursEndMinutes: Int = 7 * 60,
     val showQuietHoursStartPicker: Boolean = false,
     val showQuietHoursEndPicker: Boolean = false,
+    val requestPostNotificationPermission: Boolean = false,
+    val showPermissionDeniedBanner: Boolean = false,
+    val limitWarningThresholdPercent: Int = 70,
 ) : UiState {
 
     companion object {

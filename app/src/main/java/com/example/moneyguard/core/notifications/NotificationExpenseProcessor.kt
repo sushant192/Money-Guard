@@ -2,6 +2,7 @@ package com.example.moneyguard.core.notifications
 
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import com.example.moneyguard.core.notifications.alerts.SpendAlertCoordinator
 import com.example.moneyguard.core.notifications.parser.PaymentNotificationParser
 import com.example.moneyguard.features.dashboard.home.domain.repository.ExpenseRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -25,6 +26,7 @@ import org.koin.core.annotation.Single
 class NotificationExpenseProcessor(
     private val expenseRepository: ExpenseRepository,
     private val parser: PaymentNotificationParser,
+    private val spendAlertCoordinator: SpendAlertCoordinator,
     @Named("IODispatcher") private val ioDispatcher: CoroutineDispatcher,
 ) {
 
@@ -75,6 +77,11 @@ class NotificationExpenseProcessor(
             Log.i(
                 TAG,
                 "Logged debit ₹${parsed.amountRupees} · ${parsed.title} ($packageName, key=${sbn.key})",
+            )
+            spendAlertCoordinator.onExpenseRecorded(
+                amountRupees = parsed.amountRupees,
+                merchantTitle = parsed.title,
+                recordedAtEpochMs = sbn.postTime,
             )
         } else {
             Log.d(

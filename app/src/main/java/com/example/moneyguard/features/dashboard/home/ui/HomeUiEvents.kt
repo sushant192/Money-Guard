@@ -29,7 +29,14 @@ interface HomeUiEvents {
 
     fun onAlertThresholdSelect(threshold: AlertThreshold)
 
+    fun onDismissCustomAlertThresholdDialog()
+
+    fun onCustomAlertThresholdConfirm(percent: Int)
+
     fun onGrantNotificationAccessClick(activityContext: Context)
+
+    /** Called after the POST_NOTIFICATIONS system dialog is dismissed. */
+    fun onPostNotificationPromptHandled(granted: Boolean)
 
     fun onNotificationsClick()
 

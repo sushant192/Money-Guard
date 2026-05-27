@@ -1,5 +1,9 @@
 package com.example.moneyguard.features.dashboard.home.ui
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,15 +38,18 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CreditCard
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PriorityHigh
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -60,6 +67,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -86,6 +94,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.example.moneyguard.R
 import com.example.moneyguard.core.arch.BaseScreen
+import com.example.moneyguard.features.dashboard.home.domain.MAX_ALERT_THRESHOLD_PERCENT
+import com.example.moneyguard.features.dashboard.home.domain.MIN_ALERT_THRESHOLD_PERCENT
+import kotlin.math.roundToInt
 import com.example.moneyguard.ui.theme.BrandBlue
 import com.example.moneyguard.ui.theme.ErrorMain
 import com.example.moneyguard.ui.theme.FieldBackground
@@ -115,6 +126,20 @@ private fun HomeUiComponents(
     state: HomeUiState,
     event: HomeUiEvents,
 ) {
+    val postNotificationPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            event.onPostNotificationPromptHandled(granted)
+        }
+
+    LaunchedEffect(state.requestPostNotificationPermission) {
+        if (!state.requestPostNotificationPermission) return@LaunchedEffect
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            postNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            event.onPostNotificationPromptHandled(granted = true)
+        }
+    }
+
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     // Drawer is fixed at 60% of the screen width, per design — wide enough
@@ -409,55 +434,7 @@ private fun EmptyHomeContent(
                 event = event,
                 isOverDailyLimit = isOverDailyLimit,
                 emptyContent = {
-                    Spacer(Modifier.height(36.dp))
-                    NoExpensesIllustration()
-                    Spacer(Modifier.height(28.dp))
-                    Text(
-                        text = stringResource(R.string.home_empty_title),
-                        color = Color(0xFF111827),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.home_empty_body),
-                        color = MutedText,
-                        fontSize = 14.sp,
-                        lineHeight = 22.sp,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        color = Color(0xFFEFF5FF),
-                        tonalElevation = 0.dp,
-                        shadowElevation = 0.dp,
-                    ) {
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Info,
-                                contentDescription = null,
-                                tint = BrandBlue,
-                                modifier = Modifier.size(22.dp),
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                text = stringResource(R.string.home_empty_tip),
-                                color = BrandBlue,
-                                fontSize = 14.sp,
-                                lineHeight = 22.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    }
+                    EmptyExpensesPlaceholder(titleRes = R.string.home_empty_title)
                 },
             )
         },
@@ -594,18 +571,18 @@ private fun HomeTodayExpensesSheet(
                 DailyLimitExceededBanner(overByRupees = state.overLimitRupees())
                 Spacer(Modifier.height(16.dp))
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.home_today_expenses),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF111827),
-                )
-                if (emptyContent == null) {
+            if (emptyContent == null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_today_expenses),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF111827),
+                    )
                     Text(
                         text = stringResource(R.string.home_see_all),
                         color = BrandBlue,
@@ -618,8 +595,8 @@ private fun HomeTodayExpensesSheet(
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                 }
+                Spacer(Modifier.height(18.dp))
             }
-            Spacer(Modifier.height(18.dp))
             if (emptyContent != null) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -886,52 +863,68 @@ private fun HistoryTabContent(
     event: HomeUiEvents,
 ) {
     val scroll = rememberScrollState()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
+    val isEmpty = state.historyGroups.isEmpty() && !state.isExpensesLoading
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(Color.White),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scroll),
-        ) {
-            // Blue header — same shell as Home, just different copy.
-            Column(
-                modifier = Modifier
+            modifier =
+                Modifier
                     .fillMaxWidth()
                     .background(HomeHeaderBlue)
                     .statusBarsPadding()
                     .padding(horizontal = 20.dp)
                     .padding(top = 8.dp, bottom = 32.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.history_title),
-                    color = Color.White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.history_subtitle),
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 14.sp,
-                )
-            }
-
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = (-20).dp),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.history_title),
                 color = Color.White,
-                shadowElevation = 0.dp,
-                tonalElevation = 0.dp,
-            ) {
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.history_subtitle),
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 14.sp,
+            )
+        }
+
+        Surface(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .offset(y = (-20).dp),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            color = Color.White,
+            shadowElevation = 0.dp,
+            tonalElevation = 0.dp,
+        ) {
+            if (isEmpty) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    EmptyExpensesPlaceholder(
+                        titleRes = R.string.history_empty_title,
+                        centered = true,
+                    )
+                }
+            } else {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scroll)
+                            .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 24.dp),
                 ) {
                     state.historyGroups.forEachIndexed { index, group ->
                         if (index > 0) Spacer(Modifier.height(20.dp))
@@ -954,6 +947,39 @@ private fun HistoryTabContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyExpensesPlaceholder(
+    titleRes: Int,
+    modifier: Modifier = Modifier,
+    centered: Boolean = false,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        if (!centered) {
+            Spacer(Modifier.height(36.dp))
+        }
+        NoExpensesIllustration()
+        Spacer(Modifier.height(28.dp))
+        Text(
+            text = stringResource(titleRes),
+            color = Color(0xFF111827),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.home_empty_body),
+            color = MutedText,
+            fontSize = 14.sp,
+            lineHeight = 22.sp,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -1221,6 +1247,14 @@ private fun LimitsTabContent(
     state: HomeUiState,
     event: HomeUiEvents,
 ) {
+    if (state.showCustomAlertThresholdDialog) {
+        CustomAlertThresholdDialog(
+            initialPercent = state.alertThresholdPercent,
+            onConfirm = event::onCustomAlertThresholdConfirm,
+            onDismiss = event::onDismissCustomAlertThresholdDialog,
+        )
+    }
+
     val scroll = rememberScrollState()
     val nf = rememberInrFormatter()
     Box(
@@ -1453,6 +1487,71 @@ private fun AlertThresholdCard(
             }
         }
     }
+}
+
+@Composable
+private fun CustomAlertThresholdDialog(
+    initialPercent: Int,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var draftPercent by remember(initialPercent) {
+        mutableIntStateOf(initialPercent.coerceIn(MIN_ALERT_THRESHOLD_PERCENT, MAX_ALERT_THRESHOLD_PERCENT))
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.limits_custom_threshold_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.limits_custom_threshold_body),
+                    color = MutedText,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                )
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    text = stringResource(R.string.limits_custom_threshold_percent, draftPercent),
+                    color = HomeHeaderBlue,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(12.dp))
+                Slider(
+                    value = draftPercent.toFloat(),
+                    onValueChange = { draftPercent = it.roundToInt() },
+                    valueRange = MIN_ALERT_THRESHOLD_PERCENT.toFloat()..MAX_ALERT_THRESHOLD_PERCENT.toFloat(),
+                    steps = MAX_ALERT_THRESHOLD_PERCENT - MIN_ALERT_THRESHOLD_PERCENT - 1,
+                    colors =
+                        SliderDefaults.colors(
+                            thumbColor = HomeHeaderBlue,
+                            activeTrackColor = HomeHeaderBlue,
+                            inactiveTrackColor = Color(0xFFD6E1FF),
+                        ),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(draftPercent) }) {
+                Text(
+                    text = stringResource(R.string.limits_custom_threshold_save),
+                    color = HomeHeaderBlue,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = stringResource(R.string.limits_custom_threshold_cancel),
+                    color = MutedText,
+                )
+            }
+        },
+    )
 }
 
 @Composable
@@ -2135,7 +2234,10 @@ private fun HomePreview() {
                 ) = Unit
 
                 override fun onAlertThresholdSelect(threshold: AlertThreshold) = Unit
+                override fun onDismissCustomAlertThresholdDialog() = Unit
+                override fun onCustomAlertThresholdConfirm(percent: Int) = Unit
                 override fun onGrantNotificationAccessClick(activityContext: android.content.Context) = Unit
+                override fun onPostNotificationPromptHandled(granted: Boolean) = Unit
                 override fun onNotificationsClick() = Unit
                 override fun onLogoutClick() = Unit
             },

@@ -97,6 +97,9 @@ dependencies {
     // DataStore
     implementation(libs.androidx.datastore.preferences)
 
+    // Background work (daily summary)
+    implementation(libs.androidx.work.runtime.ktx)
+
     // Firebase (Auth)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)

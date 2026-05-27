@@ -28,4 +28,8 @@ interface NotificationsSettingsUiEvents {
     fun onQuietHoursEndSelected(totalMinutes: Int)
 
     fun onDismissTimePicker()
+
+    fun onPostNotificationPromptHandled(granted: Boolean)
+
+    fun onRequestPostNotificationPermissionClick()
 }

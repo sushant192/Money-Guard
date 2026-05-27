@@ -23,7 +23,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.ErrorOutline
@@ -42,6 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -96,6 +103,20 @@ private fun NotificationsSettingsContent(
         )
     }
 
+    val postNotificationPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            event.onPostNotificationPromptHandled(granted)
+        }
+
+    LaunchedEffect(state.requestPostNotificationPermission) {
+        if (!state.requestPostNotificationPermission) return@LaunchedEffect
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            postNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            event.onPostNotificationPromptHandled(granted = true)
+        }
+    }
+
     Column(
         modifier =
             Modifier
@@ -120,7 +141,14 @@ private fun NotificationsSettingsContent(
                         .navigationBarsPadding()
                         .padding(bottom = 32.dp),
             ) {
-                Spacer(Modifier.height(20.dp))
+                if (state.showPermissionDeniedBanner) {
+                    NotificationPermissionBanner(
+                        onAllowClick = event::onRequestPostNotificationPermissionClick,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                    )
+                } else {
+                    Spacer(Modifier.height(20.dp))
+                }
 
                 SettingsSectionHeader(stringResource(R.string.notifications_section_spending))
 
@@ -132,7 +160,11 @@ private fun NotificationsSettingsContent(
                         iconBackground = Color(0xFFFFEDD5),
                         iconTint = Color(0xFFF59E0B),
                         title = stringResource(R.string.notifications_limit_warning_title),
-                        subtitle = stringResource(R.string.notifications_limit_warning_subtitle),
+                        subtitle =
+                            stringResource(
+                                R.string.notifications_limit_warning_subtitle,
+                                state.limitWarningThresholdPercent,
+                            ),
                         checked = state.limitWarning,
                         onCheckedChange = event::onLimitWarningToggle,
                     )
@@ -204,6 +236,53 @@ private fun NotificationsSettingsContent(
                     modifier = Modifier.padding(horizontal = 20.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun NotificationPermissionBanner(
+    onAllowClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFFE8F2FC))
+                .padding(16.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.notifications_permission_banner_title),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF111827),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.notifications_permission_banner_body),
+            fontSize = 13.sp,
+            lineHeight = 20.sp,
+            color = MutedText,
+        )
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = onAllowClick,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = HomeHeaderBlue,
+                    contentColor = Color.White,
+                ),
+            elevation = ButtonDefaults.buttonElevation(0.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.notifications_permission_banner_action),
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+            )
         }
     }
 }
@@ -564,6 +643,8 @@ private fun NotificationsSettingsPreview() {
                     override fun onQuietHoursStartSelected(totalMinutes: Int) = Unit
                     override fun onQuietHoursEndSelected(totalMinutes: Int) = Unit
                     override fun onDismissTimePicker() = Unit
+                    override fun onPostNotificationPromptHandled(granted: Boolean) = Unit
+                    override fun onRequestPostNotificationPermissionClick() = Unit
                 },
         )
     }

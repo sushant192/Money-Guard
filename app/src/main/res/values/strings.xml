@@ -98,7 +98,6 @@
     <string name="home_permission_needed_note">Your notifications are never stored or shared.</string>
     <string name="home_empty_title">No expenses yet today</string>
     <string name="home_empty_body">Your expenses will appear here automatically as soon as a payment notification comes in.</string>
-    <string name="home_empty_tip">Make a UPI payment and it\'ll show up here instantly — no manual entry needed.</string>
 
     <string name="add_expense_title">Add expense</string>
     <string name="add_expense_close_cd">Close</string>
@@ -157,6 +156,7 @@
     <!-- History tab -->
     <string name="history_title">History</string>
     <string name="history_subtitle">All your transactions</string>
+    <string name="history_empty_title">No expenses yet</string>
 
     <!-- Stats tab -->
     <string name="stats_this_month">This month</string>
@@ -180,6 +180,11 @@
     <string name="limits_threshold_80" formatted="false">80%</string>
     <string name="limits_threshold_90" formatted="false">90%</string>
     <string name="limits_threshold_custom">Custom</string>
+    <string name="limits_custom_threshold_title">Custom alert threshold</string>
+    <string name="limits_custom_threshold_body">Notify me when I\'ve used this much of my daily limit.</string>
+    <string name="limits_custom_threshold_percent">%1$d%%</string>
+    <string name="limits_custom_threshold_save">Save</string>
+    <string name="limits_custom_threshold_cancel">Cancel</string>
 
     <!-- Notifications settings (drawer) -->
     <string name="notifications_settings_title">Notifications</string>
@@ -188,7 +193,7 @@
     <string name="notifications_section_transactions">TRANSACTIONS</string>
     <string name="notifications_section_sound">SOUND &amp; SCHEDULE</string>
     <string name="notifications_limit_warning_title">Limit warning</string>
-    <string name="notifications_limit_warning_subtitle">Alert at 70% of daily limit</string>
+    <string name="notifications_limit_warning_subtitle">Alert at %1$d%% of daily limit</string>
     <string name="notifications_limit_exceeded_title">Limit exceeded</string>
     <string name="notifications_limit_exceeded_subtitle">Alert when you go over budget</string>
     <string name="notifications_daily_summary_title">Daily summary</string>
@@ -208,4 +213,23 @@
     <string name="notifications_pick_end_time">Pick end time</string>
     <string name="notifications_time_ok">OK</string>
     <string name="notifications_time_cancel">Cancel</string>
+
+    <!-- MoneyGuard outbound alerts -->
+    <string name="alert_channel_name">MoneyGuard alerts</string>
+    <string name="alert_channel_desc">Spending alerts, limits, and daily summaries</string>
+    <string name="alert_new_expense_title">New expense detected</string>
+    <string name="alert_new_expense_body">₹%1$d spent at %2$s</string>
+    <string name="alert_large_txn_title">Large transaction</string>
+    <string name="alert_large_txn_body">₹%1$d spent at %2$s — above ₹%3$d</string>
+    <string name="alert_limit_warning_title">Approaching daily limit</string>
+    <string name="alert_limit_warning_body">You\'ve used %1$d%% of your ₹%2$d daily limit (₹%3$d left)</string>
+    <string name="alert_limit_exceeded_title">Daily limit exceeded</string>
+    <string name="alert_limit_exceeded_body">You\'re ₹%1$d over your ₹%2$d daily limit</string>
+    <string name="alert_daily_summary_title">Daily spend recap</string>
+    <string name="alert_daily_summary_body">You spent ₹%1$d today across %2$d transactions</string>
+    <string name="alert_daily_summary_empty_body">No spends recorded today</string>
+
+    <string name="notifications_permission_banner_title">Notifications are off</string>
+    <string name="notifications_permission_banner_body">Allow notifications so MoneyGuard can alert you about new expenses, daily limits, and your end-of-day recap.</string>
+    <string name="notifications_permission_banner_action">Allow notifications</string>
 </resources>

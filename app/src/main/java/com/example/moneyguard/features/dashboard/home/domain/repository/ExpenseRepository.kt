@@ -40,4 +40,8 @@ interface ExpenseRepository {
     suspend fun deleteExpense(id: Long)
 
     suspend fun getExpenseById(id: Long): ExpenseEntity?
+
+    suspend fun getSpentTodayRupees(nowEpochMs: Long = System.currentTimeMillis()): Int
+
+    suspend fun getTransactionCountToday(nowEpochMs: Long = System.currentTimeMillis()): Int
 }

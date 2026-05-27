@@ -1,8 +1,13 @@
 package com.example.moneyguard.features.dashboard.notificationsettings.ui
 
+import android.content.Context
 import androidx.lifecycle.viewModelScope
 import com.example.moneyguard.core.arch.BaseComposeViewModel
 import com.example.moneyguard.core.navigation.Navigator
+import com.example.moneyguard.core.notifications.PostNotificationPermissionManager
+import com.example.moneyguard.core.notifications.alerts.DailySummaryScheduler
+import com.example.moneyguard.core.notifications.alerts.MoneyGuardAlertNotifier
+import com.example.moneyguard.data.datastore.MoneyGuardPreferenceDataStore
 import com.example.moneyguard.features.dashboard.notificationsettings.domain.model.NotificationSound
 import com.example.moneyguard.features.dashboard.notificationsettings.domain.repository.NotificationSettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +22,10 @@ import org.koin.core.annotation.Named
 class NotificationsSettingsViewModel(
     @Named("AppNavigator") private val navigator: Navigator,
     private val repository: NotificationSettingsRepository,
+    private val alertNotifier: MoneyGuardAlertNotifier,
+    private val postNotificationPermissionManager: PostNotificationPermissionManager,
+    private val preferenceDataStore: MoneyGuardPreferenceDataStore,
+    private val context: Context,
 ) : BaseComposeViewModel<NotificationsSettingsUiState>(),
     NotificationsSettingsUiEvents {
 
@@ -24,6 +33,11 @@ class NotificationsSettingsViewModel(
     override val uiState: StateFlow<NotificationsSettingsUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            preferenceDataStore.observeAlertThresholdPercent().collect { percent ->
+                _uiState.update { it.copy(limitWarningThresholdPercent = percent) }
+            }
+        }
         viewModelScope.launch {
             repository.observeSettings().collect { settings ->
                 _uiState.update { current ->
@@ -44,8 +58,32 @@ class NotificationsSettingsViewModel(
         }
     }
 
+    override fun onActive() {
+        viewModelScope.launch {
+            val percent = preferenceDataStore.getAlertThresholdPercent()
+            _uiState.update { it.copy(limitWarningThresholdPercent = percent) }
+            refreshPostNotificationUi()
+            maybeRequestPostNotificationPermission()
+        }
+    }
+
     override fun onBackClick() {
         viewModelScope.launch { navigator.navigateUp() }
+    }
+
+    override fun onPostNotificationPromptHandled(granted: Boolean) {
+        viewModelScope.launch {
+            if (!granted) {
+                preferenceDataStore.setDeclinedPostNotificationOnSettings()
+            } else {
+                preferenceDataStore.clearDeclinedPostNotificationOnSettings()
+            }
+            refreshPostNotificationUi()
+        }
+    }
+
+    override fun onRequestPostNotificationPermissionClick() {
+        _uiState.update { it.copy(requestPostNotificationPermission = true) }
     }
 
     override fun onLimitWarningToggle(enabled: Boolean) {
@@ -110,11 +148,38 @@ class NotificationsSettingsViewModel(
         _uiState.update { it.copy(showQuietHoursStartPicker = false, showQuietHoursEndPicker = false) }
     }
 
+    private suspend fun refreshPostNotificationUi() {
+        val canPost = postNotificationPermissionManager.canPostAlerts()
+        val showBanner = !canPost && preferenceDataStore.hasDeclinedPostNotificationOnSettings()
+        _uiState.update {
+            it.copy(
+                requestPostNotificationPermission = false,
+                showPermissionDeniedBanner = showBanner,
+            )
+        }
+    }
+
+    private suspend fun maybeRequestPostNotificationPermission() {
+        if (postNotificationPermissionManager.canPostAlerts()) return
+        if (preferenceDataStore.hasDeclinedPostNotificationOnSettings()) return
+        _uiState.update { it.copy(requestPostNotificationPermission = true) }
+    }
+
     private fun updateAndPersist(transform: (NotificationsSettingsUiState) -> NotificationsSettingsUiState) {
         val updated = transform(_uiState.value)
         _uiState.value = updated
         viewModelScope.launch {
             repository.saveSettings(updated.toDomain())
+            alertNotifier.ensureChannels(updated.sound)
+            syncDailySummarySchedule(updated.dailySummary)
+        }
+    }
+
+    private fun syncDailySummarySchedule(enabled: Boolean) {
+        if (enabled) {
+            DailySummaryScheduler.schedule(context.applicationContext)
+        } else {
+            DailySummaryScheduler.cancel(context.applicationContext)
         }
     }
 }

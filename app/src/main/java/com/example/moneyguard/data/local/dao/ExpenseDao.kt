@@ -72,4 +72,20 @@ interface ExpenseDao {
 
     @Query("DELETE FROM expenses WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query(
+        """
+        SELECT COALESCE(SUM(amountRupees), 0) FROM expenses
+        WHERE createdAtEpochMs >= :dayStartMs AND createdAtEpochMs < :dayEndMs
+        """,
+    )
+    suspend fun sumAmountBetween(dayStartMs: Long, dayEndMs: Long): Int
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM expenses
+        WHERE createdAtEpochMs >= :dayStartMs AND createdAtEpochMs < :dayEndMs
+        """,
+    )
+    suspend fun countBetween(dayStartMs: Long, dayEndMs: Long): Int
 }

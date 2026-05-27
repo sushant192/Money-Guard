@@ -6,6 +6,9 @@ import com.example.moneyguard.core.arch.BaseComposeViewModel
 import com.example.moneyguard.core.navigation.Destination
 import com.example.moneyguard.core.navigation.Navigator
 import com.example.moneyguard.core.notifications.NotificationAccessManager
+import com.example.moneyguard.core.notifications.PostNotificationPermissionManager
+import com.example.moneyguard.data.datastore.MoneyGuardPreferenceDataStore
+import com.example.moneyguard.core.notifications.alerts.SpendAlertCoordinator
 import com.example.moneyguard.features.auth.domain.repository.AuthRepository
 import com.example.moneyguard.features.auth.domain.usecase.LogoutUseCase
 import com.example.moneyguard.features.dashboard.home.data.HomeExpenseSnapshot
@@ -26,11 +29,14 @@ import java.util.Calendar
 class HomeViewModel(
     @Named("AppNavigator") private val navigator: Navigator,
     private val notificationAccessManager: NotificationAccessManager,
+    private val postNotificationPermissionManager: PostNotificationPermissionManager,
+    private val preferenceDataStore: MoneyGuardPreferenceDataStore,
     private val authRepository: AuthRepository,
     private val logoutUseCase: LogoutUseCase,
     private val clearBudgetSetup: ClearBudgetSetupUseCase,
     private val getDailyLimit: GetDailyLimitUseCase,
     private val expenseRepository: ExpenseRepository,
+    private val spendAlertCoordinator: SpendAlertCoordinator,
 ) : BaseComposeViewModel<HomeUiState>(),
     HomeUiEvents {
 
@@ -43,12 +49,14 @@ class HomeViewModel(
             userName = currentUserDisplayName(),
             userEmail = authRepository.currentUser?.email.orEmpty(),
             hasNotificationAccess = notificationAccessManager.hasNotificationAccess(),
+            canPostMoneyGuardAlerts = postNotificationPermissionManager.canPostAlerts(),
         )
     )
     override val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
         refreshSavedDailyLimit()
+        refreshAlertThreshold()
         viewModelScope.launch {
             expenseRepository.observeAllExpenses().collect { entities ->
                 cachedExpenses = entities
@@ -82,14 +90,33 @@ class HomeViewModel(
     }
 
     override fun onActive() {
-        _uiState.update {
-            it.copy(hasNotificationAccess = notificationAccessManager.hasNotificationAccess())
-        }
+        refreshPermissionFlags()
         refreshSavedDailyLimit()
+        refreshAlertThreshold()
+        maybeRequestPostNotificationPermission()
     }
 
     override fun onTabSelected(tab: DashboardTab) {
         _uiState.update { it.copy(selectedTab = tab) }
+        if (tab == DashboardTab.Home) {
+            maybeRequestPostNotificationPermission()
+        } else {
+            _uiState.update { it.copy(requestPostNotificationPermission = false) }
+        }
+    }
+
+    override fun onPostNotificationPromptHandled(granted: Boolean) {
+        viewModelScope.launch {
+            if (!granted) {
+                preferenceDataStore.setDeclinedPostNotificationOnHome()
+            }
+            _uiState.update {
+                it.copy(
+                    requestPostNotificationPermission = false,
+                    canPostMoneyGuardAlerts = postNotificationPermissionManager.canPostAlerts(),
+                )
+            }
+        }
     }
 
     override fun onSeeAllExpensesClick() {
@@ -171,6 +198,10 @@ class HomeViewModel(
                     note = trimmedNote,
                     category = category,
                 )
+                spendAlertCoordinator.onExpenseRecorded(
+                    amountRupees = amountRupees,
+                    merchantTitle = trimmedTitle,
+                )
             }
             _uiState.update {
                 it.copy(showAddExpenseSheet = false, expenseEditDraft = null)
@@ -179,11 +210,79 @@ class HomeViewModel(
     }
 
     override fun onAlertThresholdSelect(threshold: AlertThreshold) {
-        _uiState.update { it.copy(alertThreshold = threshold) }
+        if (threshold == AlertThreshold.Custom) {
+            _uiState.update {
+                it.copy(
+                    alertThreshold = AlertThreshold.Custom,
+                    showCustomAlertThresholdDialog = true,
+                )
+            }
+            return
+        }
+        val percent = threshold.resolvePercent(_uiState.value.alertThresholdPercent)
+        persistAlertThreshold(percent, threshold)
+    }
+
+    override fun onDismissCustomAlertThresholdDialog() {
+        _uiState.update { state ->
+            val percent = state.alertThresholdPercent
+            state.copy(
+                showCustomAlertThresholdDialog = false,
+                alertThreshold = percent.toAlertThresholdSelection(),
+            )
+        }
+    }
+
+    override fun onCustomAlertThresholdConfirm(percent: Int) {
+        persistAlertThreshold(percent, AlertThreshold.Custom)
+    }
+
+    private fun refreshAlertThreshold() {
+        viewModelScope.launch {
+            val percent = preferenceDataStore.getAlertThresholdPercent()
+            _uiState.update {
+                it.copy(
+                    alertThresholdPercent = percent,
+                    alertThreshold = percent.toAlertThresholdSelection(),
+                )
+            }
+        }
+    }
+
+    private fun persistAlertThreshold(percent: Int, selection: AlertThreshold) {
+        viewModelScope.launch {
+            val resolved = selection.resolvePercent(percent)
+            preferenceDataStore.setAlertThresholdPercent(resolved)
+            _uiState.update {
+                it.copy(
+                    alertThresholdPercent = resolved,
+                    alertThreshold = selection,
+                    showCustomAlertThresholdDialog = false,
+                )
+            }
+        }
     }
 
     override fun onGrantNotificationAccessClick(activityContext: Context) {
         notificationAccessManager.openNotificationAccessSettings(activityContext)
+    }
+
+    private fun refreshPermissionFlags() {
+        _uiState.update {
+            it.copy(
+                hasNotificationAccess = notificationAccessManager.hasNotificationAccess(),
+                canPostMoneyGuardAlerts = postNotificationPermissionManager.canPostAlerts(),
+            )
+        }
+    }
+
+    private fun maybeRequestPostNotificationPermission() {
+        viewModelScope.launch {
+            if (postNotificationPermissionManager.canPostAlerts()) return@launch
+            if (preferenceDataStore.hasDeclinedPostNotificationOnHome()) return@launch
+            if (_uiState.value.selectedTab != DashboardTab.Home) return@launch
+            _uiState.update { it.copy(requestPostNotificationPermission = true) }
+        }
     }
 
     override fun onNotificationsClick() {

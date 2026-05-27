@@ -7,6 +7,9 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.moneyguard.features.dashboard.home.domain.DEFAULT_ALERT_THRESHOLD_PERCENT
+import com.example.moneyguard.features.dashboard.home.domain.MAX_ALERT_THRESHOLD_PERCENT
+import com.example.moneyguard.features.dashboard.home.domain.MIN_ALERT_THRESHOLD_PERCENT
 import com.example.moneyguard.features.dashboard.notificationsettings.domain.model.NotificationSettings
 import com.example.moneyguard.features.dashboard.notificationsettings.domain.model.NotificationSound
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +34,14 @@ private val PREFS_KEY_NOTIF_QUIET_HOURS = booleanPreferencesKey("PREFS_KEY_NOTIF
 private val PREFS_KEY_NOTIF_SOUND = stringPreferencesKey("PREFS_KEY_NOTIF_SOUND")
 private val PREFS_KEY_NOTIF_QUIET_START = intPreferencesKey("PREFS_KEY_NOTIF_QUIET_START")
 private val PREFS_KEY_NOTIF_QUIET_END = intPreferencesKey("PREFS_KEY_NOTIF_QUIET_END")
+private val PREFS_KEY_LIMIT_WARNING_SENT_DAY = stringPreferencesKey("PREFS_KEY_LIMIT_WARNING_SENT_DAY")
+private val PREFS_KEY_LIMIT_EXCEEDED_SENT_DAY = stringPreferencesKey("PREFS_KEY_LIMIT_EXCEEDED_SENT_DAY")
+private val PREFS_KEY_POST_NOTIF_HOME_DECLINED =
+    booleanPreferencesKey("PREFS_KEY_POST_NOTIF_HOME_DECLINED")
+private val PREFS_KEY_POST_NOTIF_SETTINGS_DECLINED =
+    booleanPreferencesKey("PREFS_KEY_POST_NOTIF_SETTINGS_DECLINED")
+private val PREFS_KEY_ALERT_THRESHOLD_PERCENT =
+    intPreferencesKey("PREFS_KEY_ALERT_THRESHOLD_PERCENT")
 
 private val Context.preferences by preferencesDataStore(name = PREFERENCE_FILE_NAME)
 
@@ -70,8 +81,66 @@ class MoneyGuardPreferenceDataStore(
         }
     }
 
+    fun observeAlertThresholdPercent(): Flow<Int> =
+        context.preferences.data.map { prefs ->
+            (prefs[PREFS_KEY_ALERT_THRESHOLD_PERCENT] ?: DEFAULT_ALERT_THRESHOLD_PERCENT)
+                .coerceIn(MIN_ALERT_THRESHOLD_PERCENT, MAX_ALERT_THRESHOLD_PERCENT)
+        }
+
+    suspend fun getAlertThresholdPercent(): Int =
+        observeAlertThresholdPercent().first()
+
+    suspend fun setAlertThresholdPercent(percent: Int) {
+        val clamped = percent.coerceIn(MIN_ALERT_THRESHOLD_PERCENT, MAX_ALERT_THRESHOLD_PERCENT)
+        context.preferences.edit { prefs ->
+            prefs[PREFS_KEY_ALERT_THRESHOLD_PERCENT] = clamped
+        }
+    }
+
     fun observeNotificationSettings(): Flow<NotificationSettings> =
         context.preferences.data.map { prefs -> prefs.toNotificationSettings() }
+
+    suspend fun hasDeclinedPostNotificationOnHome(): Boolean =
+        context.preferences.data.first()[PREFS_KEY_POST_NOTIF_HOME_DECLINED] ?: false
+
+    suspend fun setDeclinedPostNotificationOnHome() {
+        context.preferences.edit { prefs ->
+            prefs[PREFS_KEY_POST_NOTIF_HOME_DECLINED] = true
+        }
+    }
+
+    suspend fun hasDeclinedPostNotificationOnSettings(): Boolean =
+        context.preferences.data.first()[PREFS_KEY_POST_NOTIF_SETTINGS_DECLINED] ?: false
+
+    suspend fun setDeclinedPostNotificationOnSettings() {
+        context.preferences.edit { prefs ->
+            prefs[PREFS_KEY_POST_NOTIF_SETTINGS_DECLINED] = true
+        }
+    }
+
+    suspend fun clearDeclinedPostNotificationOnSettings() {
+        context.preferences.edit { prefs ->
+            prefs.remove(PREFS_KEY_POST_NOTIF_SETTINGS_DECLINED)
+        }
+    }
+
+    suspend fun getLimitWarningSentDay(): String? =
+        context.preferences.data.first()[PREFS_KEY_LIMIT_WARNING_SENT_DAY]
+
+    suspend fun setLimitWarningSentDay(dayKey: String) {
+        context.preferences.edit { prefs ->
+            prefs[PREFS_KEY_LIMIT_WARNING_SENT_DAY] = dayKey
+        }
+    }
+
+    suspend fun getLimitExceededSentDay(): String? =
+        context.preferences.data.first()[PREFS_KEY_LIMIT_EXCEEDED_SENT_DAY]
+
+    suspend fun setLimitExceededSentDay(dayKey: String) {
+        context.preferences.edit { prefs ->
+            prefs[PREFS_KEY_LIMIT_EXCEEDED_SENT_DAY] = dayKey
+        }
+    }
 
     suspend fun saveNotificationSettings(settings: NotificationSettings) {
         context.preferences.edit { prefs ->

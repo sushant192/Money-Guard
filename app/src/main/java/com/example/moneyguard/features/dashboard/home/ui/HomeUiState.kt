@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import com.example.moneyguard.R
 import com.example.moneyguard.core.arch.UiState
+import com.example.moneyguard.features.dashboard.home.domain.DEFAULT_ALERT_THRESHOLD_PERCENT
 
 @Immutable
 data class HomeUiState(
@@ -30,7 +31,13 @@ data class HomeUiState(
     val weeklyLimitRupees: Int,
     val weeklySpentRupees: Int,
     val alertThreshold: AlertThreshold,
+    val alertThresholdPercent: Int,
+    val showCustomAlertThresholdDialog: Boolean,
     val hasNotificationAccess: Boolean,
+    /** True when Home should show the Android 13+ POST_NOTIFICATIONS system dialog. */
+    val requestPostNotificationPermission: Boolean = false,
+    /** Whether MoneyGuard can post spending alert notifications. */
+    val canPostMoneyGuardAlerts: Boolean = true,
     val isLoading: Boolean,
     /** True until the first Room emission for expenses (avoids empty-state flash). */
     val isExpensesLoading: Boolean,
@@ -59,6 +66,8 @@ data class HomeUiState(
             weeklyLimitRupees = 8_000,
             weeklySpentRupees = 0,
             alertThreshold = AlertThreshold.Seventy,
+            alertThresholdPercent = DEFAULT_ALERT_THRESHOLD_PERCENT,
+            showCustomAlertThresholdDialog = false,
             hasNotificationAccess = true,
             isLoading = false,
             isExpensesLoading = true,
